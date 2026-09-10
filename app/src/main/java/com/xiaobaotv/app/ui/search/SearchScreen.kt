@@ -1,7 +1,11 @@
 package com.xiaobaotv.app.ui.search
 
 import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -37,6 +41,13 @@ fun SearchScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val onVodClickRemembered = remember(onVodClick) { { id: Int -> onVodClick(id) } }
     val isTablet = isExpandedLayout()
+    val keyboard = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+    val submit: (String) -> Unit = { query ->
+        viewModel.submitSearch(query)
+        keyboard?.hide()
+        focusManager.clearFocus()
+    }
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Search bar
@@ -57,7 +68,7 @@ fun SearchScreen(
                 )
             },
             trailingIcon = {
-                if (uiState.query.isNotEmpty()) {
+                if (uiState.query.isNotBlank()) {
                     IconButton(onClick = { viewModel.clearSearch() }) {
                         Icon(
                             Icons.Default.Clear,
@@ -67,6 +78,8 @@ fun SearchScreen(
                     }
                 }
             },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { submit(uiState.query) }),
             singleLine = true,
             shape = RoundedCornerShape(24.dp),
             colors = TextFieldDefaults.colors(
@@ -86,7 +99,7 @@ fun SearchScreen(
                 )
             }
 
-            if (uiState.query.isEmpty() && !uiState.isLoading) {
+            if (uiState.query.isBlank() && !uiState.isLoading) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -123,6 +136,7 @@ fun SearchScreen(
                         ) {
                             uiState.recentSearches.forEach { item ->
                                 Surface(
+                                    onClick = { submit(item.query) },
                                     shape = RoundedCornerShape(20.dp),
                                     color = MaterialTheme.colorScheme.surfaceVariant,
                                     modifier = Modifier.animateContentSize()
@@ -135,16 +149,16 @@ fun SearchScreen(
                                             text = item.query,
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.clickable { viewModel.onQueryChange(item.query) }
+                                            modifier = Modifier.padding(vertical = 8.dp)
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         IconButton(
                                             onClick = { viewModel.deleteRecentSearch(item.query) },
-                                            modifier = Modifier.size(24.dp)
+                                            modifier = Modifier.size(48.dp)
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.Clear,
-                                                contentDescription = "删除单个",
+                                                contentDescription = "删除搜索记录：${item.query}",
                                                 modifier = Modifier.size(14.dp),
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                                             )
@@ -173,7 +187,7 @@ fun SearchScreen(
                     ) {
                         hotTags.forEach { tag ->
                             Surface(
-                                onClick = { viewModel.onQueryChange(tag) },
+                                onClick = { submit(tag) },
                                 shape = RoundedCornerShape(20.dp),
                                 color = MaterialTheme.colorScheme.surfaceVariant
                             ) {
@@ -189,7 +203,7 @@ fun SearchScreen(
                 }
             }
 
-            if (uiState.results.isEmpty() && !uiState.isLoading && uiState.query.isNotEmpty()) {
+            if (uiState.results.isEmpty() && !uiState.isLoading && uiState.query.isNotBlank() && uiState.error == null) {
                 Text(
                     text = "没有找到相关内容",
                     modifier = Modifier.align(Alignment.Center),
@@ -198,15 +212,26 @@ fun SearchScreen(
                 )
             }
 
-            LazyVerticalGrid(
-                columns = if (isTablet) GridCells.Adaptive(130.dp) else GridCells.Fixed(3),
-                contentPadding = PaddingValues(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(uiState.results, key = { it.id }) { vod ->
-                    VodPosterCard(vod = vod, onClick = onVodClickRemembered)
+            if (uiState.error != null && !uiState.isLoading) {
+                Column(Modifier.align(Alignment.Center).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("搜索失败", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(8.dp))
+                    Text(uiState.error.orEmpty(), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    TextButton(onClick = { submit(uiState.query) }) { Text("重试") }
+                }
+            }
+
+            if (uiState.results.isNotEmpty() && !uiState.isLoading) {
+                LazyVerticalGrid(
+                    columns = if (isTablet) GridCells.Adaptive(130.dp) else GridCells.Fixed(3),
+                    contentPadding = PaddingValues(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(uiState.results, key = { it.id }) { vod ->
+                        VodPosterCard(vod = vod, onClick = onVodClickRemembered)
+                    }
                 }
             }
         }

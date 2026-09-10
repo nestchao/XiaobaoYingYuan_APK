@@ -18,6 +18,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
+import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -66,6 +68,7 @@ class PlayerViewModel @Inject constructor(
     private var vodContent: VodContent? = null
     private var saveJob: Job? = null
     private var autoNextJob: Job? = null
+    private var playbackJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -77,7 +80,7 @@ class PlayerViewModel @Inject constructor(
 
     fun loadVideoInfo(vodId: Int, episodeIndex: Int = 0) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, vodId = vodId) }
+            _uiState.update { it.copy(isLoading = true, vodId = vodId, error = null) }
 
             // Check pre-fetched cache using both vodId and the target episode index
             playbackUrlCache.get(vodId, episodeIndex)?.let { url ->
@@ -120,7 +123,7 @@ class PlayerViewModel @Inject constructor(
                 startProgressSavingLoop()
 
             }.onFailure { e ->
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+                _uiState.update { it.copy(isLoading = false, error = e.message ?: "播放失败，请重试") }
             }
         }
     }
@@ -161,15 +164,25 @@ class PlayerViewModel @Inject constructor(
         _uiState.update { it.copy(showAutoNextOverlay = false, autoNextCountdown = 5) }
     }
 
+    fun retryPlayback() {
+        val state = _uiState.value
+        val episode = state.sources.getOrNull(state.currentSourceIndex)?.episodes?.getOrNull(state.currentEpisodeIndex)
+        if (episode == null) loadVideoInfo(state.vodId, state.currentEpisodeIndex)
+        else loadPlaybackUrl(episode)
+    }
+
     private fun loadPlaybackUrl(episode: Episode?) {
         if (episode == null) return
 
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            videoRepository.getPlaybackUrl(episode.url).onSuccess { url ->
+        playbackJob?.cancel()
+        playbackJob = viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null, playbackUrl = null) }
+            val result = videoRepository.getPlaybackUrl(episode.url)
+            coroutineContext.ensureActive()
+            result.onSuccess { url ->
                 _uiState.update { it.copy(isLoading = false, playbackUrl = url) }
             }.onFailure { e ->
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+                _uiState.update { it.copy(isLoading = false, error = e.message ?: "播放失败，请重试") }
             }
         }
     }

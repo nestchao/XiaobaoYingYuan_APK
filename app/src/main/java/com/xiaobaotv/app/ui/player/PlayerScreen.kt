@@ -8,6 +8,10 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.media3.common.PlaybackException
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -63,9 +67,15 @@ fun PlayerScreen(
     // Custom Compose overlay states
     var showControls by remember { mutableStateOf(true) }
     var skipText by remember { mutableStateOf<String?>(null) }
-    var isPlaying by remember { mutableStateOf(true) }
+    var isPlaying by remember { mutableStateOf(false) }
     var currentPlaybackSpeed by remember { mutableStateOf(1.0f) }
     var isSpeedMenuExpanded by remember { mutableStateOf(false) }
+
+    var showEpisodes by remember { mutableStateOf(false) }
+    var isBuffering by remember { mutableStateOf(false) }
+    var playbackError by remember { mutableStateOf<String?>(null) }
+    var scrubFraction by remember { mutableStateOf<Float?>(null) }
+    var controlInteraction by remember { mutableIntStateOf(0) }
 
     // Dynamic position values for slider and timestamps
     var currentPosMs by remember { mutableLongStateOf(0L) }
@@ -82,8 +92,8 @@ fun PlayerScreen(
     }
 
     // Auto-hide controls after inactivity
-    LaunchedEffect(showControls) {
-        if (showControls) {
+    LaunchedEffect(showControls, isPlaying, isSpeedMenuExpanded, showEpisodes, scrubFraction, controlInteraction) {
+        if (showControls && isPlaying && !isSpeedMenuExpanded && !showEpisodes && scrubFraction == null) {
             delay(5000L)
             showControls = false
         }
@@ -141,13 +151,21 @@ fun PlayerScreen(
     }
 
     // Listen for playback state changes
-    LaunchedEffect(exoPlayer) {
-        exoPlayer.addListener(object : Player.Listener {
+    DisposableEffect(exoPlayer) {
+        val listener = object : Player.Listener {
             override fun onIsPlayingChanged(playing: Boolean) {
                 isPlaying = playing
+                if (!playing) showControls = true
+            }
+
+            override fun onPlayerError(error: PlaybackException) {
+                playbackError = error.localizedMessage ?: "Playback failed"
+                showControls = true
+                isBuffering = false
             }
 
             override fun onPlaybackStateChanged(playbackState: Int) {
+                isBuffering = playbackState == Player.STATE_BUFFERING
                 if (playbackState == Player.STATE_ENDED
                     && hasNextRef.get()
                     && autoNextEnabledRef.get()
@@ -155,7 +173,9 @@ fun PlayerScreen(
                     viewModel.triggerAutoNextCountdown()
                 }
             }
-        })
+        }
+        exoPlayer.addListener(listener)
+        onDispose { exoPlayer.removeListener(listener) }
     }
 
     LaunchedEffect(vodId) {
@@ -163,6 +183,9 @@ fun PlayerScreen(
     }
 
     LaunchedEffect(uiState.playbackUrl) {
+        playbackError = null
+        scrubFraction = null
+        if (uiState.playbackUrl == null) exoPlayer.pause()
         uiState.playbackUrl?.let { url ->
             val mediaItem = MediaItem.fromUri(url)
             exoPlayer.setMediaItem(mediaItem)
@@ -245,9 +268,10 @@ fun PlayerScreen(
             },
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(Unit) {
+                .pointerInput(exoPlayer) {
                     detectTapGestures(
-                        onDoubleTap = { offset ->
+                        onDoubleTap = onDoubleTap@{ offset ->
+                            if (uiState.isLoading || !exoPlayer.isCurrentMediaItemSeekable || totalDurationMs <= 0) return@onDoubleTap
                             val seekAmount = if (offset.x < size.width / 2f) -10000L else 10000L
                             val target = (exoPlayer.currentPosition + seekAmount)
                                 .coerceIn(0L, totalDurationMs.coerceAtLeast(0))
@@ -262,20 +286,27 @@ fun PlayerScreen(
         )
 
         // Loading indicator
-        if (uiState.isLoading) {
+        if (uiState.isLoading || isBuffering) {
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.Center),
                 color = MaterialTheme.colorScheme.primary
             )
         }
 
-        // Error text
-        uiState.error?.let { error ->
-            Text(
-                text = error,
-                color = Color.White,
-                modifier = Modifier.align(Alignment.Center)
-            )
+        val visibleError = uiState.error ?: playbackError
+        if (visibleError != null) {
+            Column(
+                modifier = Modifier.align(Alignment.Center).padding(24.dp)
+                    .background(Color.Black.copy(alpha = 0.85f), RoundedCornerShape(16.dp)).padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(visibleError, color = Color.White)
+                TextButton(onClick = {
+                    playbackError = null
+                    if (uiState.error != null) viewModel.retryPlayback()
+                    else { exoPlayer.prepare(); exoPlayer.play() }
+                }) { Text("重试") }
+            }
         }
 
         // Skip indicator overlay
@@ -313,6 +344,7 @@ fun PlayerScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .displayCutoutPadding()
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                         .align(Alignment.TopStart),
                     verticalAlignment = Alignment.CenterVertically
@@ -332,13 +364,16 @@ fun PlayerScreen(
                             ?.getOrNull(uiState.currentEpisodeIndex)
                             ?.name ?: "正在播放",
                         color = Color.White,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
 
                 // Center play/pause + prev/next
-                Row(
+                if (!uiState.isLoading && !isBuffering && visibleError == null) Row(
                     modifier = Modifier.align(Alignment.Center),
                     horizontalArrangement = Arrangement.spacedBy(32.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -363,7 +398,11 @@ fun PlayerScreen(
 
                     IconButton(
                         onClick = {
-                            if (isPlaying) exoPlayer.pause() else exoPlayer.play()
+                            controlInteraction++
+                            if (isPlaying) exoPlayer.pause() else {
+                                if (exoPlayer.playbackState == Player.STATE_ENDED) exoPlayer.seekTo(0)
+                                exoPlayer.play()
+                            }
                         },
                         modifier = Modifier
                             .size(72.dp)
@@ -371,7 +410,7 @@ fun PlayerScreen(
                     ) {
                         Icon(
                             imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            contentDescription = "播放/暂停",
+                            contentDescription = if (isPlaying) "暂停" else "播放",
                             tint = Color.White,
                             modifier = Modifier.size(44.dp)
                         )
@@ -400,7 +439,7 @@ fun PlayerScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(100.dp)
+                        .height(160.dp)
                         .background(
                             Brush.verticalGradient(
                                 listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))
@@ -421,19 +460,24 @@ fun PlayerScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = formatTime(currentPosMs),
+                            text = formatTime(scrubFraction?.let { (it * totalDurationMs).toLong() } ?: currentPosMs),
                             color = Color.White,
                             fontSize = 12.sp
                         )
 
                         Slider(
-                            value = if (totalDurationMs > 0) {
+                            value = scrubFraction ?: if (totalDurationMs > 0) {
                                 (currentPosMs.toFloat() / totalDurationMs).coerceIn(0f, 1f)
                             } else 0f,
                             onValueChange = { percent ->
-                                val target = (percent * totalDurationMs).toLong()
-                                exoPlayer.seekTo(target)
+                                scrubFraction = percent
                             },
+                            onValueChangeFinished = {
+                                scrubFraction?.let { exoPlayer.seekTo((it * totalDurationMs).toLong()) }
+                                scrubFraction = null
+                                controlInteraction++
+                            },
+                            enabled = totalDurationMs > 0 && exoPlayer.isCurrentMediaItemSeekable && !uiState.isLoading,
                             modifier = Modifier
                                 .weight(1f)
                                 .padding(horizontal = 8.dp),
@@ -457,6 +501,10 @@ fun PlayerScreen(
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        TextButton(onClick = { showEpisodes = true }, enabled = uiState.sources.isNotEmpty()) {
+                            Text("选集", color = Color.White)
+                        }
+                        Spacer(Modifier.weight(1f))
                         Box {
                             TextButton(onClick = { isSpeedMenuExpanded = true }) {
                                 Icon(
@@ -491,6 +539,27 @@ fun PlayerScreen(
                     }
                 }
             }
+        }
+
+        if (showEpisodes) {
+            AlertDialog(
+                onDismissRequest = { showEpisodes = false },
+                title = { Text("选集") },
+                text = {
+                    LazyColumn(Modifier.fillMaxWidth().heightIn(max = 360.dp)) {
+                        itemsIndexed(uiState.sources.getOrNull(uiState.currentSourceIndex)?.episodes.orEmpty()) { index, episode ->
+                            TextButton(
+                                onClick = { viewModel.selectEpisode(index); showEpisodes = false; controlInteraction++ },
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = !uiState.isLoading
+                            ) {
+                                Text(episode.name, fontWeight = if (index == uiState.currentEpisodeIndex) FontWeight.Bold else FontWeight.Normal)
+                            }
+                        }
+                    }
+                },
+                confirmButton = { TextButton(onClick = { showEpisodes = false }) { Text("关闭") } }
+            )
         }
 
         // Auto-next countdown overlay
