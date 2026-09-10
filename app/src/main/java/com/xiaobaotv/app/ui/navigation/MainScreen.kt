@@ -61,7 +61,7 @@ fun MainScreen() {
             bottomBar = {
                 if (!fullScreenState.isActive && !isTablet) {
                     NavigationBar(
-                        containerColor = NavBarBackground,
+                        containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.onSurface,
                         tonalElevation = 0.dp
                     ) {
@@ -88,8 +88,8 @@ fun MainScreen() {
                                 colors = NavigationBarItemDefaults.colors(
                                     selectedIconColor = MaterialTheme.colorScheme.primary,
                                     selectedTextColor = MaterialTheme.colorScheme.primary,
-                                    unselectedIconColor = Color(0xFF64748B),
-                                    unselectedTextColor = Color(0xFF64748B),
+                                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                     indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
                                 )
                             )
@@ -103,8 +103,8 @@ fun MainScreen() {
                     NavigationRail(
                         modifier = Modifier
                             .fillMaxHeight()
-                            .background(SurfaceDark),
-                        containerColor = SurfaceDark,
+                            .background(MaterialTheme.colorScheme.surface),
+                        containerColor = MaterialTheme.colorScheme.surface,
                         header = {
                             Text(
                                 text = "小宝TV",
@@ -136,8 +136,8 @@ fun MainScreen() {
                                 colors = NavigationRailItemDefaults.colors(
                                     selectedIconColor = MaterialTheme.colorScheme.primary,
                                     selectedTextColor = MaterialTheme.colorScheme.primary,
-                                    unselectedIconColor = Color(0xFF64748B),
-                                    unselectedTextColor = Color(0xFF64748B),
+                                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                     indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
                                 )
                             )

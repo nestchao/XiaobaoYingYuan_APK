@@ -12,6 +12,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.paging.LoadState
@@ -38,6 +40,12 @@ fun CategoryScreen(
     )
 
     Column(modifier = Modifier.fillMaxSize()) {
+        Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp)) {
+            Text("分类片库", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(4.dp))
+            Text("按喜好探索，总有一部适合你", style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         // Pill-style category chips
         Row(
             modifier = Modifier
@@ -81,9 +89,9 @@ fun CategoryScreen(
 
             LazyVerticalGrid(
                 columns = if (isTablet) GridCells.Adaptive(130.dp) else GridCells.Fixed(3),
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.fillMaxSize()
             ) {
                 items(
@@ -100,6 +108,23 @@ fun CategoryScreen(
                     if (vod != null) {
                         VodPosterCard(vod = vod, onClick = onVodClickRemembered)
                     }
+                }
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    when {
+                        pagingItems.loadState.append is LoadState.Loading -> Box(Modifier.fillMaxWidth().padding(16.dp)) {
+                            CircularProgressIndicator(Modifier.align(Alignment.Center))
+                        }
+                        pagingItems.loadState.append is LoadState.Error -> TextButton(onClick = { pagingItems.retry() },
+                            modifier = Modifier.fillMaxWidth()) { Text("加载失败，点击重试") }
+                    }
+                }
+            }
+
+            if (pagingItems.itemCount == 0 && pagingItems.loadState.refresh !is LoadState.Loading) {
+                Column(Modifier.align(Alignment.Center).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(if (pagingItems.loadState.refresh is LoadState.Error) "暂时无法加载" else "暂无相关内容",
+                        style = MaterialTheme.typography.titleMedium)
+                    TextButton(onClick = { pagingItems.retry() }) { Text("重新加载") }
                 }
             }
 

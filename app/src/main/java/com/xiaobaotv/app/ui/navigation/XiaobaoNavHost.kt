@@ -46,7 +46,10 @@ fun XiaobaoNavHost(
         popExitTransition = { fadeOut(animationSpec = tween(150)) }
     ) {
         composable(Routes.HOME) {
-            HomeScreen(onVodClick = { vodId -> navController.navigate(Routes.detail(vodId)) })
+            HomeScreen(
+                onVodClick = { vodId -> navController.navigate(Routes.detail(vodId)) },
+                onSettingsClick = { navController.navigate(Routes.SETTINGS) }
+            )
         }
         composable(Routes.CATEGORY) {
             CategoryScreen(onVodClick = { vodId -> navController.navigate(Routes.detail(vodId)) })

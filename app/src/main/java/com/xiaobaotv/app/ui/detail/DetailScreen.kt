@@ -33,6 +33,7 @@ import com.xiaobaotv.app.domain.model.Episode
 import com.xiaobaotv.app.domain.model.VodContent
 import com.xiaobaotv.app.ui.navigation.isExpandedLayout
 import com.xiaobaotv.app.ui.theme.ScoreStar
+import com.xiaobaotv.app.ui.components.plainSynopsis
 
 private const val EPISODE_GROUP_SIZE = 100
 
@@ -135,7 +136,7 @@ private fun TabletDetailLayout(
                             Brush.verticalGradient(
                                 colors = listOf(
                                     Color.Black.copy(alpha = 0.3f),
-                                    Color.Black.copy(alpha = 0.85f)
+                                    MaterialTheme.colorScheme.background
                                 )
                             )
                         )
@@ -146,7 +147,7 @@ private fun TabletDetailLayout(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
+                    .padding(horizontal = 24.dp, vertical = 20.dp),
                 horizontalArrangement = Arrangement.spacedBy(24.dp)
             ) {
                 // Left: poster + info
@@ -176,6 +177,8 @@ private fun TabletDetailLayout(
 
                 // Right: synopsis + episodes
                 Column(modifier = Modifier.weight(0.65f)) {
+                    Text(vod.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(20.dp))
                     Text(
                         text = "剧情简介",
                         style = MaterialTheme.typography.titleLarge,
@@ -184,7 +187,7 @@ private fun TabletDetailLayout(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = vod.content ?: "暂无简介",
+                        text = remember(vod.content) { plainSynopsis(vod.content) },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -300,7 +303,7 @@ private fun MobileDetailLayout(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
             // Full-bleed backdrop image
             item {
                 Box(
@@ -324,9 +327,7 @@ private fun MobileDetailLayout(
                                         Color.Transparent,
                                         Color.Black.copy(alpha = 0.1f),
                                         MaterialTheme.colorScheme.background
-                                    ),
-                                    startY = 0f,
-                                    endY = 1000f
+                                    )
                                 )
                             )
                     )
@@ -355,12 +356,12 @@ private fun MobileDetailLayout(
                         if (!vod.score.isNullOrBlank() && vod.score != "0.0") {
                             Text(
                                 text = "★",
-                                color = ScoreStar,
+                                color = MaterialTheme.colorScheme.secondary,
                                 fontSize = 14.sp
                             )
                             Text(
                                 text = vod.score,
-                                color = ScoreStar,
+                                color = MaterialTheme.colorScheme.secondary,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.sp
                             )
@@ -443,19 +444,6 @@ private fun MobileDetailLayout(
                         Text(buttonText, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                     }
 
-                    // Secondary action (favorites / watchlist)
-                    OutlinedButton(
-                        onClick = { },
-                        shape = RoundedCornerShape(12.dp),
-                        contentPadding = PaddingValues(vertical = 14.dp),
-                        modifier = Modifier.width(52.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = "收藏",
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
                 }
             }
 
@@ -470,7 +458,7 @@ private fun MobileDetailLayout(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = vod.content ?: "暂无简介",
+                        text = remember(vod.content) { plainSynopsis(vod.content) },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         lineHeight = 22.sp
@@ -537,9 +525,9 @@ private fun MobileDetailLayout(
                             Button(
                                 onClick = { onPlayClick(vod.id, episode.index) },
                                 modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(8.dp),
+                                shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
                                     contentColor = MaterialTheme.colorScheme.onSurface
                                 ),
                                 contentPadding = PaddingValues(vertical = 12.dp)
@@ -624,12 +612,12 @@ private fun VodMetaInfo(vod: VodContent) {
             if (!vod.score.isNullOrBlank() && vod.score != "0.0") {
                 Text(
                     text = "★",
-                    color = ScoreStar,
+                    color = MaterialTheme.colorScheme.secondary,
                     fontSize = 16.sp
                 )
                 Text(
                     text = vod.score,
-                    color = ScoreStar,
+                    color = MaterialTheme.colorScheme.secondary,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
                 )

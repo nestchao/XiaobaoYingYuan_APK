@@ -24,6 +24,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -50,6 +52,13 @@ fun SearchScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
+        Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp)) {
+            Text("发现精彩", style = MaterialTheme.typography.headlineMedium,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
+            Spacer(Modifier.height(4.dp))
+            Text("搜索电影、剧集与动漫", style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
         // Search bar
         TextField(
             value = uiState.query,
@@ -81,7 +90,7 @@ fun SearchScreen(
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(onSearch = { submit(uiState.query) }),
             singleLine = true,
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(16.dp),
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -147,9 +156,11 @@ fun SearchScreen(
                                     ) {
                                         Text(
                                             text = item.query,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.padding(vertical = 8.dp)
+                                            modifier = Modifier.widthIn(max = 200.dp).padding(vertical = 8.dp)
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         IconButton(
@@ -160,7 +171,7 @@ fun SearchScreen(
                                                 imageVector = Icons.Default.Clear,
                                                 contentDescription = "删除搜索记录：${item.query}",
                                                 modifier = Modifier.size(14.dp),
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
                                     }
@@ -204,12 +215,15 @@ fun SearchScreen(
             }
 
             if (uiState.results.isEmpty() && !uiState.isLoading && uiState.query.isNotBlank() && uiState.error == null) {
-                Text(
-                    text = "没有找到相关内容",
-                    modifier = Modifier.align(Alignment.Center),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Column(Modifier.align(Alignment.Center).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(56.dp),
+                        tint = MaterialTheme.colorScheme.primary)
+                    Spacer(Modifier.height(16.dp))
+                    Text("没有找到相关内容", style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(8.dp))
+                    Text("试试其他片名，或缩短搜索关键词", color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center)
+                }
             }
 
             if (uiState.error != null && !uiState.isLoading) {
@@ -224,9 +238,9 @@ fun SearchScreen(
             if (uiState.results.isNotEmpty() && !uiState.isLoading) {
                 LazyVerticalGrid(
                     columns = if (isTablet) GridCells.Adaptive(130.dp) else GridCells.Fixed(3),
-                    contentPadding = PaddingValues(8.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(uiState.results, key = { it.id }) { vod ->

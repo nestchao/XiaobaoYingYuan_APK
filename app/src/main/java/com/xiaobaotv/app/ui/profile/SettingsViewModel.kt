@@ -3,6 +3,8 @@ package com.xiaobaotv.app.ui.profile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.xiaobaotv.app.data.local.UserPreferences
+import com.xiaobaotv.app.data.local.ThemeMode
+import kotlinx.coroutines.flow.update
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,7 +13,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class SettingsUiState(
-    val autoNextEnabled: Boolean = true
+    val autoNextEnabled: Boolean = true,
+    val themeMode: ThemeMode = ThemeMode.SYSTEM
 )
 
 @HiltViewModel
@@ -24,10 +27,19 @@ class SettingsViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            userPreferences.autoNextEnabled.collect { enabled ->
-                _uiState.value = SettingsUiState(autoNextEnabled = enabled)
+            userPreferences.themeMode.collect { mode ->
+                _uiState.update { it.copy(themeMode = mode) }
             }
         }
+        viewModelScope.launch {
+            userPreferences.autoNextEnabled.collect { enabled ->
+                _uiState.update { it.copy(autoNextEnabled = enabled) }
+            }
+        }
+    }
+
+    fun setThemeMode(mode: ThemeMode) {
+        viewModelScope.launch { userPreferences.setThemeMode(mode) }
     }
 
     fun setAutoNextEnabled(enabled: Boolean) {

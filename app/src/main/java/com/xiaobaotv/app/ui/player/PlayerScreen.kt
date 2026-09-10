@@ -305,7 +305,7 @@ fun PlayerScreen(
                     playbackError = null
                     if (uiState.error != null) viewModel.retryPlayback()
                     else { exoPlayer.prepare(); exoPlayer.play() }
-                }) { Text("重试") }
+                }) { Text("重试", color = Color.White) }
             }
         }
 
@@ -406,12 +406,12 @@ fun PlayerScreen(
                         },
                         modifier = Modifier
                             .size(72.dp)
-                            .background(Color.Black.copy(alpha = 0.6f), CircleShape)
+                            .background(MaterialTheme.colorScheme.primary, CircleShape)
                     ) {
                         Icon(
                             imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                             contentDescription = if (isPlaying) "暂停" else "播放",
-                            tint = Color.White,
+                            tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(44.dp)
                         )
                     }
@@ -452,6 +452,7 @@ fun PlayerScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .align(Alignment.BottomCenter)
+                        .displayCutoutPadding()
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
                     // Timeline slider with timestamps
@@ -553,7 +554,8 @@ fun PlayerScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 enabled = !uiState.isLoading
                             ) {
-                                Text(episode.name, fontWeight = if (index == uiState.currentEpisodeIndex) FontWeight.Bold else FontWeight.Normal)
+                                Text(if (index == uiState.currentEpisodeIndex) "正在播放 · ${episode.name}" else episode.name,
+                                    fontWeight = if (index == uiState.currentEpisodeIndex) FontWeight.Bold else FontWeight.Normal)
                             }
                         }
                     }
@@ -585,7 +587,7 @@ fun PlayerScreen(
                         fontWeight = FontWeight.Bold
                     )
                     TextButton(onClick = { viewModel.cancelAutoNext() }) {
-                        Text("取消", color = MaterialTheme.colorScheme.primary, fontSize = 14.sp)
+                        Text("取消", color = Color.White, fontSize = 14.sp)
                     }
                 }
             }

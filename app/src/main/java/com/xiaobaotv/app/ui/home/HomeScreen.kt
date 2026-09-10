@@ -10,6 +10,8 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -28,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.xiaobaotv.app.domain.model.WatchHistoryItem
 import com.xiaobaotv.app.ui.components.SectionHeader
+import com.xiaobaotv.app.ui.components.plainSynopsis
 import com.xiaobaotv.app.ui.components.VodPosterCard
 import com.xiaobaotv.app.ui.navigation.isExpandedLayout
 import com.xiaobaotv.app.ui.theme.PromoBadge
@@ -36,12 +39,13 @@ import com.xiaobaotv.app.ui.theme.ScoreStar
 @Composable
 fun HomeScreen(
     onVodClick: (Int) -> Unit,
+    onSettingsClick: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val onVodClickRemembered = remember(onVodClick) { { id: Int -> onVodClick(id) } }
     val isTablet = isExpandedLayout()
-    val heroHeight = if (isTablet) 360.dp else 280.dp
+    val heroHeight = if (isTablet) 400.dp else 340.dp
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (uiState.isLoading) {
@@ -63,6 +67,20 @@ fun HomeScreen(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 16.dp)
         ) {
+            item {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("小宝TV", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(4.dp))
+                    Text("发现好故事，开启好时光", style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                FilledTonalIconButton(onClick = onSettingsClick) {
+                    Icon(Icons.Default.Settings, contentDescription = "设置与外观")
+                }
+                }
+            }
             // Hero Banner Carousel
             if (uiState.heroItems.isNotEmpty()) {
                 item {
@@ -70,7 +88,9 @@ fun HomeScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
                             .height(heroHeight)
+                            .clip(RoundedCornerShape(24.dp))
                     ) {
                         HorizontalPager(state = pagerState) { page ->
                             val vod = uiState.heroItems[page]
@@ -96,9 +116,7 @@ fun HomeScreen(
                                                     Color.Transparent,
                                                     Color.Black.copy(alpha = 0.15f),
                                                     Color.Black.copy(alpha = 0.85f)
-                                                ),
-                                                startY = 0f,
-                                                endY = heroHeight.value * 1.2f
+                                                )
                                             )
                                         )
                                 )
@@ -129,13 +147,15 @@ fun HomeScreen(
                                         text = vod.name,
                                         style = MaterialTheme.typography.headlineMedium,
                                         color = Color.White,
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
                                     )
 
                                     if (!vod.content.isNullOrBlank()) {
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(
-                                            text = vod.content,
+                                            text = remember(vod.content) { plainSynopsis(vod.content) },
                                             style = MaterialTheme.typography.bodySmall,
                                             color = Color.White.copy(alpha = 0.7f),
                                             maxLines = 2,
@@ -169,6 +189,11 @@ fun HomeScreen(
                                 }
                             }
                         }
+                        Surface(modifier = Modifier.align(Alignment.TopEnd).padding(12.dp),
+                            color = Color.Black.copy(alpha = 0.6f), shape = RoundedCornerShape(12.dp)) {
+                            Text("${pagerState.currentPage + 1} / ${uiState.heroItems.size}", color = Color.White,
+                                style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp))
+                        }
                     }
                 }
             }
@@ -201,8 +226,7 @@ fun HomeScreen(
             if (uiState.hotMovies.isNotEmpty()) {
                 item {
                     SectionHeader(
-                        title = "热门电影",
-                        onMoreClick = { uiState.hotMovies.firstOrNull()?.let { onVodClickRemembered(it.id) } }
+                        title = "热门电影"
                     )
                 }
                 item {
@@ -230,8 +254,7 @@ fun HomeScreen(
             if (uiState.hotTvSeries.isNotEmpty()) {
                 item {
                     SectionHeader(
-                        title = "热门剧集",
-                        onMoreClick = { uiState.hotTvSeries.firstOrNull()?.let { onVodClickRemembered(it.id) } }
+                        title = "热门剧集"
                     )
                 }
                 item {
@@ -259,8 +282,7 @@ fun HomeScreen(
             if (uiState.hotAnime.isNotEmpty()) {
                 item {
                     SectionHeader(
-                        title = "热门动漫",
-                        onMoreClick = { uiState.hotAnime.firstOrNull()?.let { onVodClickRemembered(it.id) } }
+                        title = "热门动漫"
                     )
                 }
                 item {
@@ -302,7 +324,7 @@ fun HistoryPosterCard(
             modifier = Modifier
                 .aspectRatio(0.75f)
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(16.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
             AsyncImage(
@@ -314,14 +336,16 @@ fun HistoryPosterCard(
 
             // Episode badge
             Surface(
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+                color = Color.Black.copy(alpha = 0.75f),
                 shape = RoundedCornerShape(bottomEnd = 8.dp),
                 modifier = Modifier.align(Alignment.TopStart)
             ) {
                 Text(
                     text = history.episodeName,
                     color = Color.White,
-                    fontSize = 9.sp,
+                    fontSize = 11.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                 )
             }

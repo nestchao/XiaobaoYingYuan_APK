@@ -3,9 +3,9 @@ package com.xiaobaotv.app.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // Primary palette - Blue accent for interactive elements
-val Primary = Color(0xFF1A73E8)
+val Primary = Color(0xFF3659D9)
 val PrimaryDark = Color(0xFF1557B0)
-val PrimaryLight = Color(0xFF4A90D9)
+val PrimaryLight = Color(0xFFADC6FF)
 val PrimaryContainer = Color(0xFFD3E3FD)
 val OnPrimaryContainer = Color(0xFF041E49)
 
@@ -20,14 +20,14 @@ val TertiaryContainer = Color(0xFFCEEDEF)
 val OnTertiaryContainer = Color(0xFF002022)
 
 // Surface colors
-val SurfaceLight = Color(0xFFF8F9FA)
+val SurfaceLight = Color(0xFFFFFFFF)
 val SurfaceDark = Color(0xFF0F172A)        // Slate-900 deep background
 val SurfaceVariantLight = Color(0xFFE8EAED)
 val SurfaceVariantDark = Color(0xFF1E293B) // Slate-800 card surface
 
 // Background
-val BackgroundLight = Color(0xFFFFFFFF)
-val BackgroundDark = Color(0xFF0F172A)     // Same as SurfaceDark
+val BackgroundLight = Color(0xFFF6F7FB)
+val BackgroundDark = Color(0xFF0B101C)
 
 // Navigation bar glass effect
 val NavBarBackground = Color(0xFF0F172A).copy(alpha = 0.85f)

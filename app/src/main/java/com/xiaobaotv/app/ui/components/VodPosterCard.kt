@@ -35,7 +35,7 @@ fun VodPosterCard(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 1.05f else 1f,
+        targetValue = if (isPressed) 0.97f else 1f,
         animationSpec = spring(dampingRatio = 0.7f, stiffness = 300f),
         label = "posterScale"
     )
@@ -55,9 +55,9 @@ fun VodPosterCard(
     ) {
         Box(
             modifier = Modifier
-                .width(120.dp)
-                .height(160.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .fillMaxWidth()
+                .aspectRatio(2f / 3f)
+                .clip(RoundedCornerShape(16.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
             AsyncImage(
@@ -79,7 +79,7 @@ fun VodPosterCard(
                     Text(
                         text = vod.score,
                         color = ScoreStar,
-                        fontSize = 10.sp,
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                     )
@@ -89,21 +89,23 @@ fun VodPosterCard(
             // Remarks badge (top-left, e.g. "更新至12集")
             if (!vod.remarks.isNullOrBlank()) {
                 Surface(
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
-                    shape = RoundedCornerShape(bottomEnd = 8.dp),
-                    modifier = Modifier.align(Alignment.TopStart)
+                    color = Color.Black.copy(alpha = 0.75f),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.align(Alignment.BottomStart).padding(8.dp)
                 ) {
                     Text(
                         text = vod.remarks,
                         color = Color.White,
-                        fontSize = 9.sp,
+                        fontSize = 11.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         Text(
             text = vod.name,
