@@ -18,11 +18,13 @@ import org.junit.Test
 class SearchViewModelTest {
     private val dispatcher = StandardTestDispatcher()
     private val requests = mutableListOf<String?>()
+    private val requestedPages = mutableListOf<Int>()
     private var response: Result<List<VodContent>> = Result.success(emptyList())
     private var responseDelay = 0L
     private val repository = object : ContentRepository {
         override suspend fun getVodList(typeId: Int?, page: Int, limit: Int, query: String?, categoryId: Int?, ids: String?): Result<List<VodContent>> {
             requests += query
+            requestedPages += page
             delay(responseDelay)
             return response
         }
@@ -88,4 +90,37 @@ class SearchViewModelTest {
         assertNull(model.uiState.value.error)
         assertEquals(2, requests.size)
     }
+
+    @Test fun loadingMoreAppendsTheNextSearchPage() = runTest(dispatcher) {
+        val first = vod(id = 1, name = "蜡笔小新")
+        val laterMatch = vod(id = 35234481, name = "蜡笔小新第五季")
+        val model = SearchViewModel(repository, history)
+
+        response = Result.success(listOf(first))
+        model.submitSearch("蜡笔小新")
+        advanceUntilIdle()
+
+        response = Result.success(listOf(laterMatch))
+        model.loadNextPage()
+        advanceUntilIdle()
+
+        assertEquals(listOf(1, 2), requestedPages)
+        assertEquals(listOf(first, laterMatch), model.uiState.value.results)
+        assertTrue(model.uiState.value.hasMorePages)
+    }
+
+    private fun vod(id: Int, name: String) = VodContent(
+        id = id,
+        name = name,
+        pic = "",
+        actor = null,
+        director = null,
+        area = null,
+        year = null,
+        content = null,
+        remarks = null,
+        score = null,
+        typeId = 0,
+        typeName = null
+    )
 }

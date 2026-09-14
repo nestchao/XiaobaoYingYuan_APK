@@ -48,7 +48,9 @@ object ShowPageParser {
         return if (page <= 1) {
             "$BASE_URL/movie/show/$typeId.html"
         } else {
-            "$BASE_URL/movie/show/$typeId-$page.html"
+            // The site uses /show/{type}/page/{page}.html. The old
+            // /show/{type}-{page}.html URL returns an empty 200 response.
+            "$BASE_URL/movie/show/$typeId/page/$page.html"
         }
     }
 }

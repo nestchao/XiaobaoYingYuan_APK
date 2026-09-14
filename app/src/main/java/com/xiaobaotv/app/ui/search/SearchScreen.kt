@@ -8,6 +8,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
@@ -19,6 +20,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -245,6 +247,35 @@ fun SearchScreen(
                 ) {
                     items(uiState.results, key = { it.id }) { vod ->
                         VodPosterCard(vod = vod, onClick = onVodClickRemembered)
+                    }
+                    if (uiState.hasMorePages || uiState.isLoadingMore || uiState.loadMoreError != null) {
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            when {
+                                uiState.isLoadingMore -> Box(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                                uiState.loadMoreError != null -> TextButton(
+                                    onClick = viewModel::retryLoadNextPage,
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text("加载失败，点击重试")
+                                }
+                                else -> {
+                                    LaunchedEffect(uiState.currentPage) {
+                                        viewModel.loadNextPage()
+                                    }
+                                    Box(
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator()
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

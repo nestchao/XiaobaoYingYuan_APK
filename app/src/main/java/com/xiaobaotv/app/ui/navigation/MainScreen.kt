@@ -29,6 +29,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.xiaobaotv.app.ui.theme.NavBarBackground
@@ -45,6 +46,20 @@ val LocalFullScreenState = staticCompositionLocalOf { FullScreenState() }
 fun isExpandedLayout(): Boolean {
     val configuration = LocalConfiguration.current
     return configuration.screenWidthDp >= 600
+}
+
+private fun NavHostController.navigateToTopLevel(route: String) {
+    // Settings/detail/player can sit above a tab destination. Pop back to an
+    // existing tab first so tapping a tab always changes the visible screen.
+    if (popBackStack(route, inclusive = false)) return
+
+    navigate(route) {
+        popUpTo(graph.findStartDestination().id) {
+            saveState = true
+        }
+        launchSingleTop = true
+        restoreState = true
+    }
 }
 
 @Composable
@@ -77,13 +92,7 @@ fun MainScreen() {
                                 label = { Text(item.label) },
                                 selected = selected,
                                 onClick = {
-                                    navController.navigate(item.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
+                                    navController.navigateToTopLevel(item.route)
                                 },
                                 colors = NavigationBarItemDefaults.colors(
                                     selectedIconColor = MaterialTheme.colorScheme.primary,
@@ -125,13 +134,7 @@ fun MainScreen() {
                                 label = { Text(item.label) },
                                 selected = selected,
                                 onClick = {
-                                    navController.navigate(item.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
+                                    navController.navigateToTopLevel(item.route)
                                 },
                                 colors = NavigationRailItemDefaults.colors(
                                     selectedIconColor = MaterialTheme.colorScheme.primary,

@@ -1,6 +1,15 @@
 package com.xiaobaotv.app.ui.player
 
 import android.view.View
+import android.content.Context
+import android.media.AudioManager
+import android.provider.Settings
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.material.icons.filled.Brightness6
+import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.filled.VolumeOff
+import kotlin.math.roundToInt
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.annotation.OptIn
@@ -23,6 +32,8 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.FastForward
+import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -63,6 +74,28 @@ fun PlayerScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val fullScreenState = LocalFullScreenState.current
+    val window = (context as? ComponentActivity)?.window
+    val audioManager = remember(context) { context.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
+    var adjustment by remember { mutableStateOf<String?>(null) }
+    var adjustmentLevel by remember { mutableFloatStateOf(0f) }
+    var adjusting by remember { mutableStateOf(false) }
+    var adjustmentRevision by remember { mutableIntStateOf(0) }
+
+    // Brightness is local to this player window; restore the prior override on exit.
+    DisposableEffect(window) {
+        val previousBrightness = window?.attributes?.screenBrightness
+        onDispose {
+            if (window != null && previousBrightness != null) {
+                window.attributes = window.attributes.apply { screenBrightness = previousBrightness }
+            }
+        }
+    }
+    LaunchedEffect(adjusting, adjustmentRevision) {
+        if (!adjusting) {
+            delay(1200)
+            adjustment = null
+        }
+    }
 
     // Custom Compose overlay states
     var showControls by remember { mutableStateOf(true) }
@@ -76,6 +109,10 @@ fun PlayerScreen(
     var playbackError by remember { mutableStateOf<String?>(null) }
     var scrubFraction by remember { mutableStateOf<Float?>(null) }
     var controlInteraction by remember { mutableIntStateOf(0) }
+    var isHorizontalSeeking by remember { mutableStateOf(false) }
+    var showSeekPreview by remember { mutableStateOf(false) }
+    var seekPreviewMs by remember { mutableLongStateOf(0L) }
+    var seekStartMs by remember { mutableLongStateOf(0L) }
 
     // Dynamic position values for slider and timestamps
     var currentPosMs by remember { mutableLongStateOf(0L) }
@@ -92,10 +129,17 @@ fun PlayerScreen(
     }
 
     // Auto-hide controls after inactivity
-    LaunchedEffect(showControls, isPlaying, isSpeedMenuExpanded, showEpisodes, scrubFraction, controlInteraction) {
-        if (showControls && isPlaying && !isSpeedMenuExpanded && !showEpisodes && scrubFraction == null) {
+    LaunchedEffect(showControls, isPlaying, isSpeedMenuExpanded, showEpisodes, scrubFraction, controlInteraction, adjusting, isHorizontalSeeking) {
+        if (showControls && isPlaying && !isSpeedMenuExpanded && !showEpisodes && scrubFraction == null && !adjusting && !isHorizontalSeeking) {
             delay(5000L)
             showControls = false
+        }
+    }
+
+    LaunchedEffect(isHorizontalSeeking) {
+        if (!isHorizontalSeeking && showSeekPreview) {
+            delay(700L)
+            showSeekPreview = false
         }
     }
 
@@ -266,8 +310,90 @@ fun PlayerScreen(
                     useController = false
                 }
             },
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // Compose owns gestures above the native video surface. Controls above
+        // this layer keep their own touch handling, including the seek slider.
+        Box(
             modifier = Modifier
                 .fillMaxSize()
+                .pointerInput(window, audioManager) {
+                    var brightnessGesture = false
+                    var level = 0f
+                    var maxVolume = 1
+                    var minVolume = 0
+                    detectVerticalDragGestures(
+                        onDragStart = { start ->
+                            brightnessGesture = start.x < size.width / 2f
+                            adjusting = true
+                            adjustmentRevision++
+                            if (brightnessGesture) {
+                                val systemBrightness = Settings.System.getInt(
+                                    context.contentResolver, Settings.System.SCREEN_BRIGHTNESS, 128
+                                ) / 255f
+                                level = (window?.attributes?.screenBrightness?.takeIf { it >= 0f }
+                                    ?: systemBrightness).coerceIn(0.02f, 1f)
+                                adjustment = "亮度"
+                            } else {
+                                maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC).coerceAtLeast(1)
+                                minVolume = if (android.os.Build.VERSION.SDK_INT >= 28)
+                                    audioManager.getStreamMinVolume(AudioManager.STREAM_MUSIC) else 0
+                                level = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat() / maxVolume
+                                adjustment = if (audioManager.isVolumeFixed) "音量由设备控制" else "音量"
+                            }
+                            adjustmentLevel = level
+                        },
+                        onVerticalDrag = { change, dragAmount ->
+                            change.consume()
+                            level = (level - dragAmount / (size.height * 0.65f).coerceAtLeast(1f))
+                                .coerceIn(if (brightnessGesture) 0.02f else minVolume.toFloat() / maxVolume, 1f)
+                            if (brightnessGesture) {
+                                window?.let { it.attributes = it.attributes.apply { screenBrightness = level } }
+                                adjustmentLevel = level
+                            } else {
+                                if (!audioManager.isVolumeFixed) {
+                                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,
+                                        (level * maxVolume).roundToInt().coerceIn(minVolume, maxVolume), 0)
+                                }
+                                adjustmentLevel = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat() / maxVolume
+                            }
+                        },
+                        onDragEnd = { adjusting = false; controlInteraction++ },
+                        onDragCancel = { adjusting = false; controlInteraction++ }
+                    )
+                }
+                .pointerInput(exoPlayer, totalDurationMs) {
+                    var draggedMs = 0f
+                    detectHorizontalDragGestures(
+                        onDragStart = {
+                            if (!uiState.isLoading && totalDurationMs > 0L && exoPlayer.isCurrentMediaItemSeekable) {
+                                seekStartMs = exoPlayer.currentPosition.coerceIn(0L, totalDurationMs)
+                                seekPreviewMs = seekStartMs
+                                draggedMs = 0f
+                                isHorizontalSeeking = true
+                                showSeekPreview = true
+                            }
+                        },
+                        onHorizontalDrag = { change, dragAmount ->
+                            if (!isHorizontalSeeking) return@detectHorizontalDragGestures
+                            change.consume()
+                            // A full-width swipe now moves up to three minutes, making
+                            // long videos quicker to navigate while retaining precision
+                            // for shorter, slower drags.
+                            draggedMs += dragAmount / size.width.coerceAtLeast(1) * 180_000f
+                            seekPreviewMs = (seekStartMs + draggedMs.toLong()).coerceIn(0L, totalDurationMs)
+                        },
+                        onDragEnd = {
+                            if (isHorizontalSeeking) {
+                                exoPlayer.seekTo(seekPreviewMs)
+                                isHorizontalSeeking = false
+                                controlInteraction++
+                            }
+                        },
+                        onDragCancel = { isHorizontalSeeking = false }
+                    )
+                }
                 .pointerInput(exoPlayer) {
                     detectTapGestures(
                         onDoubleTap = onDoubleTap@{ offset ->
@@ -323,7 +449,7 @@ fun PlayerScreen(
 
         // Full Compose overlay controls
         AnimatedVisibility(
-            visible = showControls,
+            visible = showControls && !adjusting,
             enter = fadeIn(),
             exit = fadeOut()
         ) {
@@ -502,10 +628,14 @@ fun PlayerScreen(
                         horizontalArrangement = Arrangement.End,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        Text("左侧滑动调亮度 · 右侧滑动调音量",
+                            color = Color.White.copy(alpha = 0.75f),
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.weight(1f), maxLines = 2)
                         TextButton(onClick = { showEpisodes = true }, enabled = uiState.sources.isNotEmpty()) {
                             Text("选集", color = Color.White)
                         }
-                        Spacer(Modifier.weight(1f))
+                        Spacer(Modifier.width(8.dp))
                         Box {
                             TextButton(onClick = { isSpeedMenuExpanded = true }) {
                                 Icon(
@@ -538,6 +668,67 @@ fun PlayerScreen(
                             }
                         }
                     }
+                }
+            }
+        }
+
+        adjustment?.let { label ->
+            Surface(
+                modifier = Modifier.align(Alignment.Center).width(200.dp),
+                color = Color(0xEE182133), contentColor = Color.White,
+                shape = RoundedCornerShape(24.dp)
+            ) {
+                Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        if (label == "亮度") Icons.Default.Brightness6
+                        else if (adjustmentLevel == 0f) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
+                        contentDescription = null, modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Text(label + " " + (adjustmentLevel * 100).roundToInt() + "%",
+                        style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(12.dp))
+                    LinearProgressIndicator(progress = { adjustmentLevel }, modifier = Modifier.fillMaxWidth(),
+                        color = Color.White, trackColor = Color.White.copy(alpha = 0.2f))
+                }
+            }
+        }
+
+        if (showSeekPreview && totalDurationMs > 0L) {
+            val isForward = seekPreviewMs >= seekStartMs
+            Surface(
+                modifier = Modifier.align(Alignment.Center),
+                color = Color.Black.copy(alpha = 0.78f),
+                shape = RoundedCornerShape(14.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = if (isForward) Icons.Filled.FastForward else Icons.Filled.FastRewind,
+                        contentDescription = if (isForward) "快进" else "快退",
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Text(
+                        text = (if (isForward) "快进 " else "快退 ") + formatTime(seekPreviewMs),
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp
+                    )
+                    Text(
+                        text = formatTime(seekPreviewMs) + " / " + formatTime(totalDurationMs),
+                        color = Color.White.copy(alpha = 0.75f),
+                        fontSize = 12.sp
+                    )
+                    LinearProgressIndicator(
+                        progress = { (seekPreviewMs.toFloat() / totalDurationMs).coerceIn(0f, 1f) },
+                        modifier = Modifier.width(180.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = Color.White.copy(alpha = 0.2f)
+                    )
                 }
             }
         }

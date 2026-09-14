@@ -15,6 +15,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
+import okhttp3.CacheControl
 import okhttp3.Request
 import org.jsoup.Jsoup
 import timber.log.Timber
@@ -75,7 +76,7 @@ class ContentRepositoryImpl @Inject constructor(
             // If the API returns empty but we have a typeId, try the HTML show page
             if (response.list.isEmpty() && typeId != null) {
                 Timber.d("API returned empty for tid=$typeId, falling back to show page HTML")
-                val showPage = fetchShowPage(typeId, page)
+                val showPage = fetchShowPageWithRetry(typeId, page)
                 if (showPage.isNotEmpty()) {
                     return Result.success(showPage)
                 }
@@ -166,6 +167,7 @@ class ContentRepositoryImpl @Inject constructor(
             val url = SearchPageParser.buildSearchUrl(query, page)
             val request = Request.Builder().url(url)
                 .header("User-Agent", "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36")
+                .cacheControl(CacheControl.FORCE_NETWORK)
                 .build()
             client.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
@@ -220,12 +222,28 @@ class ContentRepositoryImpl @Inject constructor(
                 }
 
                 val html = response.body?.string() ?: return@withContext emptyList()
-                ShowPageParser.parse(html, typeId)
+                val results = ShowPageParser.parse(html, typeId)
+                Timber.d("Show page typeId=" + typeId + " page=" + page + " bytes=" + html.length + " parsed=" + results.size)
+                results
             }
         } catch (e: Exception) {
             Timber.e(e, "Exception fetching show page typeId=$typeId page=$page")
             emptyList()
         }
+    }
+
+    /**
+     * A 200 response with an anti-bot/temporary page is indistinguishable from
+     * an empty category unless we retry the HTML fallback.
+     */
+    private suspend fun fetchShowPageWithRetry(typeId: Int, page: Int): List<VodContent> {
+        repeat(3) { attempt ->
+            val results = fetchShowPage(typeId, page)
+            if (results.isNotEmpty()) return results
+            if (attempt < 2) delay(700L * (attempt + 1))
+        }
+        Timber.w("Show page typeId=" + typeId + " page=" + page + " returned no items after 3 attempts")
+        return emptyList()
     }
 
     override suspend fun cleanupStaleCache() {

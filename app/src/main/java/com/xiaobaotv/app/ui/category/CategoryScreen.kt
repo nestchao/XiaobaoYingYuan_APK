@@ -122,9 +122,12 @@ fun CategoryScreen(
 
             if (pagingItems.itemCount == 0 && pagingItems.loadState.refresh !is LoadState.Loading) {
                 Column(Modifier.align(Alignment.Center).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(if (pagingItems.loadState.refresh is LoadState.Error) "暂时无法加载" else "暂无相关内容",
+                    val failed = pagingItems.loadState.refresh is LoadState.Error
+                    Text(if (failed) "加载失败" else "暂无相关内容",
                         style = MaterialTheme.typography.titleMedium)
-                    TextButton(onClick = { pagingItems.retry() }) { Text("重新加载") }
+                    TextButton(onClick = { if (failed) pagingItems.retry() else pagingItems.refresh() }) {
+                        Text(if (failed) "重试" else "重新加载")
+                    }
                 }
             }
 

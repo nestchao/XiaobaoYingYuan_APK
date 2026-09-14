@@ -18,8 +18,12 @@ import javax.inject.Inject
 data class SearchUiState(
     val query: String = "",
     val isLoading: Boolean = false,
+    val isLoadingMore: Boolean = false,
     val results: List<VodContent> = emptyList(),
     val error: String? = null,
+    val loadMoreError: String? = null,
+    val currentPage: Int = 0,
+    val hasMorePages: Boolean = false,
     val recentSearches: List<SearchHistoryItem> = emptyList()
 )
 
@@ -57,7 +61,16 @@ class SearchViewModel @Inject constructor(
     private fun search(query: String, debounce: Boolean) {
         searchJob?.cancel()
         _uiState.update {
-            it.copy(query = query, results = emptyList(), error = null, isLoading = query.isNotBlank())
+            it.copy(
+                query = query,
+                results = emptyList(),
+                error = null,
+                loadMoreError = null,
+                isLoading = query.isNotBlank(),
+                isLoadingMore = false,
+                currentPage = 0,
+                hasMorePages = false
+            )
         }
         if (query.isBlank()) return
         searchJob = viewModelScope.launch {
@@ -65,13 +78,52 @@ class SearchViewModel @Inject constructor(
             val result = contentRepository.getVodList(query = query.trim())
             coroutineContext.ensureActive()
             result.onSuccess { list ->
-                _uiState.update { it.copy(isLoading = false, results = list) }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        results = list,
+                        currentPage = 1,
+                        hasMorePages = list.isNotEmpty()
+                    )
+                }
                 searchHistoryRepository.addSearchQuery(query.trim())
             }.onFailure { error ->
                 _uiState.update { it.copy(isLoading = false, error = error.message ?: "搜索失败，请重试") }
             }
         }
     }
+
+    fun loadNextPage() {
+        val state = _uiState.value
+        val query = state.query.trim()
+        if (query.isBlank() || state.isLoading || state.isLoadingMore || !state.hasMorePages) return
+
+        val nextPage = state.currentPage + 1
+        _uiState.update { it.copy(isLoadingMore = true, loadMoreError = null) }
+        searchJob = viewModelScope.launch {
+            val result = contentRepository.getVodList(query = query, page = nextPage)
+            coroutineContext.ensureActive()
+            result.onSuccess { pageResults ->
+                _uiState.update { current ->
+                    if (current.query != query) current else current.copy(
+                        isLoadingMore = false,
+                        results = (current.results + pageResults).distinctBy { it.id },
+                        currentPage = nextPage,
+                        hasMorePages = pageResults.isNotEmpty()
+                    )
+                }
+            }.onFailure { error ->
+                _uiState.update { current ->
+                    if (current.query != query) current else current.copy(
+                        isLoadingMore = false,
+                        loadMoreError = error.message ?: "加载更多失败，请重试"
+                    )
+                }
+            }
+        }
+    }
+
+    fun retryLoadNextPage() = loadNextPage()
 
     fun clearSearch() = search("", debounce = false)
 
