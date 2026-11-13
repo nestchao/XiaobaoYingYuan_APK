@@ -4,6 +4,7 @@
 [![Kotlin](https://img.shields.io/badge/language-Kotlin-purple.svg)](https://kotlinlang.org)
 [![Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-blue.svg)](https://developer.android.com/jetpack/compose)
 [![Architecture](https://img.shields.io/badge/architecture-Clean%20%2B%20MVVM-orange.svg)](https://developer.android.com/topic/libraries/architecture)
+[![Website](https://img.shields.io/badge/website-live%20%E2%9C%A6-6C8CFF.svg)](https://nestchao.github.io/XiaobaoYingYuan_APK/)
 
 **XiaobaoYingYuan (小宝影院) APK** is a modern, high-performance Android video streaming application designed for seamless playback of VOD (Video on Demand) content. Built from the ground up using **Kotlin**, **Jetpack Compose**, and **Clean Architecture with MVVM**, it offers a fluid, responsive, and native-feeling media experience on mobile and tablet devices.
 

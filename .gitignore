@@ -38,6 +38,12 @@ gradle/wrapper/gradle-wrapper.jar
 *.html
 test_*
 fix_*
+
+# --- Website sources (GitHub Pages) ---
+!website/*.html
+!website/*.txt
+!website/**/*.html
+!website/**/*.txt
 replace_*
 write_*
 build_*
