@@ -144,6 +144,26 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Switches playback line while staying on the same episode position.
+     *
+     * Mirrors [selectEpisode]: persist progress first, then resolve the URL of
+     * the same episode on the new source. Safe to call with the already-active
+     * index (no-op) or with an out-of-range index (no-op).
+     */
+    fun selectSource(sourceIndex: Int) {
+        cancelAutoNext()
+        val currentState = _uiState.value
+        if (sourceIndex == currentState.currentSourceIndex) return
+        val source = currentState.sources.getOrNull(sourceIndex) ?: return
+        val episode = source.episodes.getOrNull(currentState.currentEpisodeIndex) ?: return
+
+        // Runs on Main.immediate: progress is read before the state swap below.
+        viewModelScope.launch { saveProgressInternal() }
+        _uiState.update { it.copy(currentSourceIndex = sourceIndex, savedPositionMs = 0L) }
+        loadPlaybackUrl(episode)
+    }
+
     fun triggerAutoNextCountdown() {
         autoNextJob?.cancel()
         autoNextJob = viewModelScope.launch {

@@ -32,7 +32,8 @@ class XiaobaoApp : Application(), ImageLoaderFactory {
                     .maxSizeBytes(128 * 1024 * 1024)
                     .build()
             }
-            .crossfade(100)
+            .crossfade(180)
+            .allowHardware(true)
             .build()
     }
 }

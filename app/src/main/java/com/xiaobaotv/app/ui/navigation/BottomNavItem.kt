@@ -1,14 +1,14 @@
 package com.xiaobaotv.app.ui.navigation
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.GridView
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.rounded.GridView
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.ui.graphics.vector.ImageVector
 
 sealed class BottomNavItem(
@@ -20,28 +20,28 @@ sealed class BottomNavItem(
     data object Home : BottomNavItem(
         route = "home",
         label = "首页",
-        selectedIcon = Icons.Filled.Home,
+        selectedIcon = Icons.Rounded.Home,
         unselectedIcon = Icons.Outlined.Home
     )
 
     data object Category : BottomNavItem(
         route = "category",
         label = "分类",
-        selectedIcon = Icons.Filled.GridView,
+        selectedIcon = Icons.Rounded.GridView,
         unselectedIcon = Icons.Outlined.GridView
     )
 
     data object Search : BottomNavItem(
         route = "search",
         label = "搜索",
-        selectedIcon = Icons.Filled.Search,
+        selectedIcon = Icons.Rounded.Search,
         unselectedIcon = Icons.Outlined.Search
     )
 
     data object History : BottomNavItem(
         route = "history",
         label = "历史",
-        selectedIcon = Icons.Filled.History,
+        selectedIcon = Icons.Rounded.History,
         unselectedIcon = Icons.Outlined.History
     )
 

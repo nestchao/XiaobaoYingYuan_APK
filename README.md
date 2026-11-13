@@ -11,6 +11,7 @@
 
 ## 📖 Table of Contents
 - [About](#-about)
+- [Aurora UI (v1.2.0)](#-aurora-ui-v120)
 - [Key Features](#-key-features)
 - [Architecture & Design Patterns](#-architecture--design-patterns)
 - [Tech Stack & Libraries](#-tech-stack--libraries)
@@ -29,6 +30,36 @@ This hybrid approach, combined with robust multi-tier caching (Room DB + in-memo
 
 ---
 
+## 🎨 Aurora UI (v1.2.0)
+
+Version 1.2.0 is a full visual and interaction redesign — the **Aurora** design
+language: a deep midnight canvas with slow-drifting aurora glows, frosted-glass
+chrome, a single periwinkle→violet brand gradient, cinematic artwork and
+spring-physics motion. It ships with light and dark palettes, a new adaptive
+launcher icon and a reworked player.
+
+Highlights:
+
+- **Adaptive navigation**: floating glass bottom pill on phones, an icon rail on
+  portrait tablets and a labelled sidebar on large tablets.
+- **Cinematic Home** with an infinite auto-advancing hero carousel (parallax
+  artwork, glass CTAs), continue-watching rail, skeleton shimmer and
+  pull-to-refresh.
+- **Poster-first Detail** with a parallax backdrop, expandable synopsis, real
+  source switching and an adaptive episode grid; two-pane on tablets.
+- **Dark smoked-glass Player** with a hand-drawn buffered seek bar, animated
+  volume/brightness medallion, episode bottom sheet, auto-next countdown ring
+  and the original full gesture set.
+- **Redesigned Category / Search / History / Settings**: animated filter pills,
+  aurora search field with ranked discovery, date-grouped history with
+  swipe-to-delete + undo, and a live theme studio with preview cards.
+
+See [docs/UI_REDESIGN.md](docs/UI_REDESIGN.md) for the full design-system
+breakdown, motion spec, tablet adaptation matrix and the screenshot gallery
+(`docs/screenshots/`).
+
+---
+
 ## ✨ Key Features
 
 - 🏠 **Rich Home Screen**: Features trending carousels, categorized movie lists, and recent recommendations in a polished hero-style layout.
@@ -40,7 +71,7 @@ This hybrid approach, combined with robust multi-tier caching (Room DB + in-memo
   - Video stream source switcher (switching between different web players).
   - Episode selection drawer.
   - Auto-next episode play with visual countdown timer.
-- 📱 **Adaptive UI**: Fully responsive layouts supporting both mobile and tablet devices (featuring split-pane tablet interfaces).
+- 📱 **Adaptive UI**: Fully responsive layouts supporting both mobile and tablet devices — floating glass bottom navigation on phones, icon rail / labelled sidebar on tablets, two-pane detail and adaptive poster grids.
 - ⚙️ **Custom Settings**: Adjust playback behavior, auto-next options, and general application preferences.
 
 ---

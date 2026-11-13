@@ -59,3 +59,8 @@ Thumbs.db
 *.log
 *.hprof
 *.prof
+
+# Local QA captures and staged builds
+/qa/
+/dist/
+
