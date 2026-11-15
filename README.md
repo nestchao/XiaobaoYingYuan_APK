@@ -39,6 +39,12 @@ chrome, a single periwinkle→violet brand gradient, cinematic artwork and
 spring-physics motion. It ships with light and dark palettes, a new adaptive
 launcher icon and a reworked player.
 
+**v1.3.0 — Aurora Player** adds a second player pass: movie-title top bar, a
+five-button transport (episodes + ±10 s), screen lock, picture-in-picture,
+aspect-ratio switching, a scrubbing time bubble, long-press 2× speed and a
+slide-in episode panel on tablets. See
+[docs/PLAYER_UPGRADE.md](docs/PLAYER_UPGRADE.md).
+
 Highlights:
 
 - **Adaptive navigation**: floating glass bottom pill on phones, an icon rail on
