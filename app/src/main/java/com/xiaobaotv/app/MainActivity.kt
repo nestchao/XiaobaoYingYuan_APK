@@ -1,5 +1,7 @@
 package com.xiaobaotv.app
 
+import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -15,6 +17,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.xiaobaotv.app.data.local.ThemeMode
 import com.xiaobaotv.app.data.local.UserPreferences
 import com.xiaobaotv.app.ui.navigation.MainScreen
+import com.xiaobaotv.app.ui.player.PlayerPipBridge
 import com.xiaobaotv.app.ui.theme.XiaobaoTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -48,5 +51,21 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    /** Home press while the player is open → float the video instead of leaving. */
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            PlayerPipBridge.enterPip?.invoke()
+        }
+    }
+
+    override fun onPictureInPictureModeChanged(
+        isInPictureInPictureMode: Boolean,
+        newConfig: Configuration,
+    ) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        PlayerPipBridge.inPip.value = isInPictureInPictureMode
     }
 }
