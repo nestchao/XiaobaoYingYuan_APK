@@ -52,6 +52,6 @@ GitHub Pages is configured with source branch `gh-pages`, path `/`.
   runtime, so theme changes are picked up automatically.
 - Screenshots are generated from the emulator QA captures and converted to
   WebP. Keep the 760×1351 (phone) and 1440×810 (tablet) aspect ratios.
-- The download button points at the `v1.2.0` GitHub Release asset. Update the
+- The download button points at the `v1.3.0` GitHub Release asset. Update the
   URL (hero, download section, JSON-LD) when a newer version ships.
 - Everything respects `prefers-reduced-motion`.
