@@ -913,6 +913,95 @@
     panel && panel.setAttribute("aria-hidden", "true");
   });
 
+  /* ── Player feature switcher ──────────────────────────────────────────── */
+  const plFeatures = $$("#plFeatures .pl-feat");
+  const plShots = $$("#plFrame .pl-shot");
+  const plProgress = $("#plProgress");
+  if (plFeatures.length && plShots.length) {
+    const PL_DURATION = 5200;
+    let plIndex = 0;
+    let plAuto = !reduceMotion;
+    let plStart = 0;
+    let plRaf = 0;
+    let plVisible = false;
+
+    const showPlayerFeature = (index, userAction = false) => {
+      plIndex = (index + plFeatures.length) % plFeatures.length;
+      const key = plFeatures[plIndex].dataset.key;
+      plFeatures.forEach((btn, i) => {
+        const on = i === plIndex;
+        btn.classList.toggle("is-active", on);
+        btn.setAttribute("aria-selected", String(on));
+        btn.tabIndex = on ? 0 : -1;
+      });
+      plShots.forEach((img) => img.classList.toggle("is-active", img.dataset.key === key));
+      if (userAction) {
+        plAuto = false;
+        if (plProgress) plProgress.style.width = "100%";
+        // Keep the active pill in view on the horizontal mobile strip.
+        const strip = plFeatures[plIndex].parentElement;
+        if (strip && strip.scrollWidth > strip.clientWidth) {
+          const delta =
+            plFeatures[plIndex].getBoundingClientRect().left - strip.getBoundingClientRect().left;
+          strip.scrollTo({
+            left: strip.scrollLeft + delta - 18,
+            behavior: reduceMotion ? "auto" : "smooth",
+          });
+        }
+      }
+      plStart = performance.now();
+    };
+
+    const plTick = (now) => {
+      if (plAuto && plVisible) {
+        const p = clamp((now - plStart) / PL_DURATION, 0, 1);
+        if (plProgress) plProgress.style.width = `${p * 100}%`;
+        if (p >= 1) showPlayerFeature(plIndex + 1);
+      }
+      plRaf = requestAnimationFrame(plTick);
+    };
+
+    plFeatures.forEach((btn, i) => {
+      btn.addEventListener("click", () => showPlayerFeature(i, true));
+      btn.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+          e.preventDefault();
+          showPlayerFeature(plIndex + 1, true);
+          plFeatures[plIndex].focus();
+        } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+          e.preventDefault();
+          showPlayerFeature(plIndex - 1, true);
+          plFeatures[plIndex].focus();
+        }
+      });
+    });
+
+    showPlayerFeature(0);
+    if (!plAuto && plProgress) plProgress.style.width = "100%";
+
+    if ("IntersectionObserver" in window) {
+      new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            plVisible = entry.isIntersecting;
+            if (plVisible) plStart = performance.now();
+          });
+        },
+        { threshold: 0.35 }
+      ).observe($("#plFrame"));
+    } else {
+      plVisible = true;
+    }
+    if (plAuto) plRaf = requestAnimationFrame(plTick);
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) cancelAnimationFrame(plRaf);
+      else if (plAuto) {
+        plStart = performance.now();
+        plRaf = requestAnimationFrame(plTick);
+      }
+    });
+  }
+
   /* ── Toast + copy hash ────────────────────────────────────────────────── */
   const toast = $("#toast");
   let toastTimer = 0;

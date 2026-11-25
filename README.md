@@ -1,206 +1,296 @@
-# XiaobaoYingYuan (小宝影院) APK 📺
+<div align="center">
 
-[![Platform](https://img.shields.io/badge/platform-Android-green.svg)](https://developer.android.com)
-[![Kotlin](https://img.shields.io/badge/language-Kotlin-purple.svg)](https://kotlinlang.org)
-[![Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-blue.svg)](https://developer.android.com/jetpack/compose)
-[![Architecture](https://img.shields.io/badge/architecture-Clean%20%2B%20MVVM-orange.svg)](https://developer.android.com/topic/libraries/architecture)
-[![Website](https://img.shields.io/badge/website-live%20%E2%9C%A6-6C8CFF.svg)](https://nestchao.github.io/XiaobaoYingYuan_APK/)
+<img src="website/assets/img/brand/icon-192.png" alt="XiaobaoYingYuan icon" width="104" height="104" />
 
-**XiaobaoYingYuan (小宝影院) APK** is a modern, high-performance Android video streaming application designed for seamless playback of VOD (Video on Demand) content. Built from the ground up using **Kotlin**, **Jetpack Compose**, and **Clean Architecture with MVVM**, it offers a fluid, responsive, and native-feeling media experience on mobile and tablet devices.
+# 小宝影院 · XiaobaoYingYuan
 
----
+**An ad-free Android video streaming app with a cinematic Aurora UI.**<br/>
+Built with Kotlin, Jetpack Compose and Media3 ExoPlayer, with layouts for both phones and tablets.
 
-## 📖 Table of Contents
-- [About](#-about)
-- [Aurora UI (v1.2.0)](#-aurora-ui-v120)
-- [Key Features](#-key-features)
-- [Architecture & Design Patterns](#-architecture--design-patterns)
-- [Tech Stack & Libraries](#-tech-stack--libraries)
-- [Data Flow & Scraping Engine](#-data-flow--scraping-engine)
-- [Performance & Caching Strategy](#-performance--caching-strategy)
-- [Getting Started](#-getting-started)
-- [Releases](#-releases)
+[![Latest release](https://img.shields.io/github/v/release/nestchao/XiaobaoYingYuan_APK?style=flat-square&color=7c4dff&label=release)](https://github.com/nestchao/XiaobaoYingYuan_APK/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/nestchao/XiaobaoYingYuan_APK/total?style=flat-square&color=5b7cfa)](https://github.com/nestchao/XiaobaoYingYuan_APK/releases)
+[![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=flat-square&logo=android&logoColor=white)](#-install)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.1-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org)
+[![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
+[![Website](https://img.shields.io/badge/website-live-8ca5ff?style=flat-square)](https://nestchao.github.io/XiaobaoYingYuan_APK/)
 
----
+[**⬇️ Download APK**](https://github.com/nestchao/XiaobaoYingYuan_APK/releases/latest) · [**🌐 Website**](https://nestchao.github.io/XiaobaoYingYuan_APK/) · [**📝 Changelog**](#-changelog) · [**🛠 Build from source**](#-build-from-source)
 
-## ℹ️ About
+<br/>
 
-**XiaobaoTV** acts as a client for aggregating and streaming video content by dynamically parsing VOD web interfaces. Unlike typical streaming clients that rely entirely on rigid, vulnerable APIs, XiaobaoTV utilizes a powerful Jsoup-based scraping and parsing pipeline to extract video metadata, stream links (including m3u8 streams), and play categories directly from the web. 
+<img src="docs/site-screenshots/site-hero-dark.png" alt="XiaobaoYingYuan landing page" width="860" />
 
-This hybrid approach, combined with robust multi-tier caching (Room DB + in-memory LRU) and ExoPlayer's optimized network streaming, delivers instant playback and zero-latency navigation.
+</div>
 
 ---
 
-## 🎨 Aurora UI (v1.2.0)
+## Contents
 
-Version 1.2.0 is a full visual and interaction redesign — the **Aurora** design
-language: a deep midnight canvas with slow-drifting aurora glows, frosted-glass
-chrome, a single periwinkle→violet brand gradient, cinematic artwork and
-spring-physics motion. It ships with light and dark palettes, a new adaptive
-launcher icon and a reworked player.
-
-**v1.3.0 — Aurora Player** adds a second player pass: movie-title top bar, a
-five-button transport (episodes + ±10 s), screen lock, picture-in-picture,
-aspect-ratio switching, a scrubbing time bubble, long-press 2× speed and a
-slide-in episode panel on tablets. See
-[docs/PLAYER_UPGRADE.md](docs/PLAYER_UPGRADE.md).
-
-Highlights:
-
-- **Adaptive navigation**: floating glass bottom pill on phones, an icon rail on
-  portrait tablets and a labelled sidebar on large tablets.
-- **Cinematic Home** with an infinite auto-advancing hero carousel (parallax
-  artwork, glass CTAs), continue-watching rail, skeleton shimmer and
-  pull-to-refresh.
-- **Poster-first Detail** with a parallax backdrop, expandable synopsis, real
-  source switching and an adaptive episode grid; two-pane on tablets.
-- **Dark smoked-glass Player** with a hand-drawn buffered seek bar, animated
-  volume/brightness medallion, episode bottom sheet, auto-next countdown ring
-  and the original full gesture set.
-- **Redesigned Category / Search / History / Settings**: animated filter pills,
-  aurora search field with ranked discovery, date-grouped history with
-  swipe-to-delete + undo, and a live theme studio with preview cards.
-
-See [docs/UI_REDESIGN.md](docs/UI_REDESIGN.md) for the full design-system
-breakdown, motion spec, tablet adaptation matrix and the screenshot gallery
-(`docs/screenshots/`).
+- [Highlights](#-highlights)
+- [Screenshots](#-screenshots)
+- [What's new in v1.3 — Aurora Player](#-whats-new-in-v13--aurora-player)
+- [Install](#-install)
+- [Features](#-features)
+- [Tech stack](#-tech-stack)
+- [Architecture](#-architecture)
+- [Build from source](#-build-from-source)
+- [Project structure](#-project-structure)
+- [Changelog](#-changelog)
+- [简体中文](#-简体中文)
+- [Disclaimer](#-disclaimer)
 
 ---
 
-## ✨ Key Features
+## ✨ Highlights
 
-- 🏠 **Rich Home Screen**: Features trending carousels, categorized movie lists, and recent recommendations in a polished hero-style layout.
-- 🔍 **Dynamic Search**: Scrapes custom video search results in real-time, bypassing typical server-side limitations.
-- 🗂️ **Comprehensive Categories**: Fully paginated video listing with filter controls powered by Android Paging 3.
-- 📜 **Local Search & Watch History**: Keeps track of your queries with database-backed automatic pruning.
-- 🎬 **Premium Media Player**: Full-featured player built on ExoPlayer with dynamic controls:
-  - Play/Pause, Fast Forward/Rewind, and Gesture controls.
-  - Video stream source switcher (switching between different web players).
-  - Episode selection drawer.
-  - Auto-next episode play with visual countdown timer.
-- 📱 **Adaptive UI**: Fully responsive layouts supporting both mobile and tablet devices — floating glass bottom navigation on phones, icon rail / labelled sidebar on tablets, two-pane detail and adaptive poster grids.
-- ⚙️ **Custom Settings**: Adjust playback behavior, auto-next options, and general application preferences.
+| | |
+|---|---|
+| 🎨 **Aurora design system** | Midnight and porcelain themes, frosted-glass surfaces, one brand gradient and spring-physics motion throughout. |
+| 🎬 **Immersive player** | Screen lock, picture-in-picture, long-press 2× speed, a time bubble while scrubbing, and gestures for brightness and volume. |
+| 📱 **Phone and tablet layouts** | Floating glass bottom bar on phones, an icon rail on portrait tablets, a full sidebar on landscape tablets. |
+| ⚡ **Fast playback** | Stream URLs are resolved while you read the detail page, so playback starts as soon as you tap Play. |
+| 🔒 **Local first** | No account and no ads. History and preferences stay on your device (Room + DataStore). |
+| 🪶 **Small download** | About 3.2 MB release APK, shrunk with R8. |
 
 ---
 
-## 🏗️ Architecture & Design Patterns
+## 📸 Screenshots
 
-The project strictly adheres to **Clean Architecture** combined with **MVVM (Model-View-ViewModel)**. This separates concerns, ensures high testability, and isolates the core business logic from framework-specific dependencies.
+<div align="center">
 
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/phone-home-dark.jpg" width="190" alt="Home (dark)" /><br/><sub>Home · dark</sub></td>
+    <td align="center"><img src="docs/screenshots/phone-detail-light.jpg" width="190" alt="Detail" /><br/><sub>Detail</sub></td>
+    <td align="center"><img src="docs/screenshots/phone-category-light.jpg" width="190" alt="Category" /><br/><sub>Category</sub></td>
+    <td align="center"><img src="docs/screenshots/phone-search-light.jpg" width="190" alt="Search" /><br/><sub>Search</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/phone-home-light.jpg" width="190" alt="Home (light)" /><br/><sub>Home · light</sub></td>
+    <td align="center"><img src="docs/screenshots/phone-history-dark.jpg" width="190" alt="History" /><br/><sub>History</sub></td>
+    <td align="center"><img src="docs/screenshots/phone-settings-light.jpg" width="190" alt="Settings" /><br/><sub>Settings</sub></td>
+    <td align="center"><img src="docs/screenshots/phone-player-episode-sheet.jpg" width="190" alt="Episode sheet" /><br/><sub>Episode sheet</sub></td>
+  </tr>
+</table>
+
+**Tablet**
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/tablet-home-light.jpg" width="400" alt="Tablet home" /><br/><sub>Home with sidebar</sub></td>
+    <td align="center"><img src="docs/screenshots/tablet-detail-light.jpg" width="400" alt="Tablet detail" /><br/><sub>Two-pane detail</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/tablet-home-dark.jpg" width="400" alt="Tablet home dark" /><br/><sub>Midnight theme</sub></td>
+    <td align="center"><img src="docs/player-screenshots/player-episodes-panel.png" width="400" alt="Tablet episode panel" /><br/><sub>Player episode panel</sub></td>
+  </tr>
+</table>
+
+</div>
+
+More screenshots: [`docs/screenshots/`](docs/screenshots) · [`docs/player-screenshots/`](docs/player-screenshots)
+
+---
+
+## 🆕 What's new in v1.3 — Aurora Player
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/player-screenshots/player-controls-phone.png" alt="Player controls" /></td>
+    <td width="50%"><img src="docs/player-screenshots/player-locked.png" alt="Screen lock" /></td>
+  </tr>
+  <tr>
+    <td align="center"><sub><b>Five-button transport</b>: previous · −10 s · play · +10 s · next</sub></td>
+    <td align="center"><sub><b>Screen lock</b>: hides the controls and blocks accidental touches</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/player-screenshots/player-speed-boost.png" alt="Long-press 2x" /></td>
+    <td><img src="docs/player-screenshots/player-more-menu.png" alt="More menu" /></td>
+  </tr>
+  <tr>
+    <td align="center"><sub><b>Long-press 2×</b>: release to return to normal speed</sub></td>
+    <td align="center"><sub><b>Aspect ratio + picture-in-picture</b>: PiP starts automatically when you press Home</sub></td>
+  </tr>
+</table>
+
+Also new: a scrubbing time bubble, tap-to-toggle remaining time, a "switch source" action on playback errors, a "play now" button on the auto-next card, and a slide-in episode panel on tablets. Full write-up: [docs/PLAYER_UPGRADE.md](docs/PLAYER_UPGRADE.md).
+
+### Gesture cheat sheet
+
+| Gesture | Action |
+|---|---|
+| Double-tap left / right | Rewind / forward 10 s |
+| Long-press | 2× speed while held |
+| Horizontal swipe | Seek with preview (up to 3 min across the screen) |
+| Vertical swipe, left half | Brightness |
+| Vertical swipe, right half | Volume |
+
+---
+
+## 📦 Install
+
+1. Download the latest APK from [**Releases**](https://github.com/nestchao/XiaobaoYingYuan_APK/releases/latest), or from the [website](https://nestchao.github.io/XiaobaoYingYuan_APK/#download).
+2. Allow your browser or file manager to **install unknown apps**.
+3. Open the APK and install. Requires **Android 8.0 (API 26)** or newer.
+
+> [!TIP]
+> Each release lists the APK's SHA-256 so you can check the file before installing.
+> To upgrade, install the new APK over the old one. If Android reports a signature conflict, uninstall the old version first.
+
+---
+
+## 🧩 Features
+
+- **Home**: endless auto-advancing hero carousel with parallax artwork, a continue-watching row, content rows, skeleton loading and pull-to-refresh.
+- **Detail**: full-bleed parallax backdrop, expandable synopsis, tag row, real source (线路) switching and an adaptive episode grid. Two panes on tablets.
+- **Player** (Media3 ExoPlayer, HLS):
+  - smoked-glass controls with a custom-drawn buffered seek bar
+  - speed menu, long-press 2×, double-tap ±10 s, plus brightness, volume and seek gestures
+  - screen lock, picture-in-picture and aspect ratio (fit / fill / crop)
+  - episode drawer, or a side panel on tablets
+  - auto-next with a countdown ring
+- **Category**: Paging 3 infinite grid with animated filter pills, falling back to the HTML show page when the API returns nothing.
+- **Search**: scraped results with infinite scroll, plus a local search history that prunes itself.
+- **History**: watch history grouped by date, with swipe-to-delete and undo.
+- **Settings**: theme studio (system / light / dark) with live preview cards, and an auto-next toggle.
+
+---
+
+## 🛠 Tech stack
+
+| Area | Libraries |
+|---|---|
+| Language | Kotlin 2.1, Coroutines, Flow |
+| UI | Jetpack Compose (Material 3), Navigation Compose, Core SplashScreen |
+| DI | Hilt (KSP) |
+| Networking | OkHttp 4 (HTML), Retrofit 2 + Moshi (vod list API) |
+| Parsing | Jsoup |
+| Persistence | Room, DataStore Preferences |
+| Paging | Paging 3 |
+| Media | Media3 ExoPlayer (HLS) with a 200 MB disk cache |
+| Images | Coil (20% memory cache + 128 MB disk cache) |
+| Performance | Baseline Profile (ProfileInstaller), R8 shrinking |
+| Logging | Timber |
+
+---
+
+## 🏗 Architecture
+
+The app uses **Clean Architecture + MVVM**, organised by feature, with one-way data flow through `StateFlow`.
+
+```mermaid
+flowchart LR
+    UI["ui/<br/>Compose screens"] --> VM["ViewModels<br/>StateFlow · UDF"]
+    VM --> UC["domain/<br/>use cases · models"]
+    UC --> RI["data/repository<br/>Result&lt;T&gt; · retry"]
+    RI --> C1["In-memory LRU<br/>DetailPageCache · PlaybackUrlCache"]
+    RI --> DB["Room<br/>1 h TTL"]
+    RI --> NET["OkHttp + Jsoup<br/>Retrofit"]
 ```
-┌──────────────────────────────────────────────────────────┐
-│                           ui/                            │  (Jetpack Compose, ViewModels)
-└────────────────────────────┬─────────────────────────────┘
-                             │ (Injects Use Cases)
-                             ▼
-┌──────────────────────────────────────────────────────────┐
-│                         domain/                          │  (Business Logic, Models, Repository Interfaces)
-└────────────────────────────▲─────────────────────────────┘
-                             │ (Implements Interfaces)
-                             ▼
-┌──────────────────────────────────────────────────────────┐
-│                          data/                           │  (Room, Retrofit, OkHttp, Jsoup, Cache managers)
-└──────────────────────────────────────────────────────────┘
-```
 
-### Module Structure
+**How a title gets played**
 
-- **`domain`**: Contains the pure business logic of the app.
-  - `model/`: Plain Kotlin data classes representing entities like `VodContent`, `VideoSource`, `Episode`.
-  - `repository/`: Interfaces defining contracts for data operations.
-  - `usecase/`: Single-responsibility business cases.
-- **`data`**: Houses concrete implementations of data access.
-  - `remote/`: API definitions and HTTP communications.
-  - `parser/`: Jsoup parsers tailored for scraping video structure.
-  - `repository/`: Implements domain repositories, orchestrating caches, network, and database.
-  - `cache/`: In-memory thread-safe caches (`DetailPageCache`, `PlaybackUrlCache`).
-  - `local/`: Room Database configurations, Entities, and DAOs.
-- **`ui`**: Jetpack Compose-driven UI layer.
-  - Features package-by-feature organization (`home`, `detail`, `player`, `category`, `search`, `history`, `profile`).
-  - Implements unidirectional data flow (UDF) via ViewModels exporting `StateFlow`.
-- **`di`**: Hilt Dependency Injection modules keeping components decoupled and easy to configure.
+1. **Detail**: `/movie/detail/{id}.html` → `VodDetailParser` → `VodContent`, cached in memory → Room → network.
+2. **Sources and episodes**: `PlayPageParser` reads the source tabs and episode lists.
+3. **Stream URL**: the play page is fetched and the `.m3u8` URL is pulled from its JavaScript variables. `DetailViewModel` does this ahead of time and stores the result in `PlaybackUrlCache`.
+4. **Playback**: ExoPlayer streams the HLS playlist through its disk cache.
+
+**Caching layers**
+
+| Layer | What | Policy |
+|---|---|---|
+| `DetailPageCache` | Raw detail HTML | In-memory; removes duplicate fetches between repositories |
+| Vod detail | Parsed `VodContent` | LRU → Room (1 h TTL) → network |
+| `PlaybackUrlCache` | Resolved `.m3u8` URLs | In-memory LRU, filled ahead of time |
+| OkHttp | HTTP responses | 10 MB; HTML forced to a 5-minute cache |
+| ExoPlayer | Media segments | 200 MB disk cache |
+
+Network calls retry with exponential backoff (2 attempts, 1 s initial delay).
 
 ---
 
-## 🛠️ Tech Stack & Libraries
+## 🚀 Build from source
 
-- **Language**: [Kotlin](https://kotlin.org)
-- **UI Framework**: [Jetpack Compose](https://developer.android.com/jetpack/compose) (Material 3)
-- **Navigation**: Jetpack Navigation Compose
-- **Asynchronous & Reactive**: Kotlin Coroutines and StateFlow/SharedFlow
-- **Dependency Injection**: [Hilt](https://developer.android.com/training/dependency-injection/hilt-android) (KSP)
-- **Networking**: [Retrofit](https://square.github.io/retrofit/) + [OkHttp](https://square.github.io/okhttp/) (with 10MB HTTP disk cache)
-- **HTML Scraping & Parsing**: [Jsoup](https://jsoup.org/)
-- **Local Database**: [Room DB](https://developer.android.com/training/data-storage/room) for persistent local caching, settings, and histories
-- **Media Playback**: [Media3 ExoPlayer](https://developer.android.com/media/media3/exoplayer) with native HLS streaming support
-- **Image Loading**: [Coil](https://coil-kt.github.io/coil/) (with 20% memory cache and 128MB disk cache)
-- **Pagination**: [Paging 3](https://developer.android.com/topic/libraries/architecture/paging/v3-overview) for infinite scrolling lists
-- **Local Preferences**: [DataStore Preferences](https://developer.android.com/topic/libraries/architecture/datastore)
-- **Logging**: [Timber](https://github.com/JakeWharton/timber)
-
----
-
-## 🔄 Data Flow & Scraping Engine
-
-Because the API endpoints are frequently secured or change formats, the application integrates a robust **HTML scraping engine**:
-
-1. **Detail Scraper (`VodDetailParser`)**: Extract details from `/movie/detail/{id}.html` to retrieve video specifications, tags, description, and cast list.
-2. **Playpage Scraper (`PlayPageParser`)**: Fetches play page links, parses the multi-source video tabs, list of episodes, and extracts the direct `.m3u8` stream playlist directly from encrypted or obfuscated JavaScript variables.
-3. **Show Scraper (`ShowPageParser`)** & **Search Scraper (`SearchPageParser`)**: Extracts movie list arrays from general navigation or search result grids.
-
----
-
-## ⚡ Performance & Caching Strategy
-
-Streaming video applications are extremely sensitive to latency. XiaobaoTV implements a meticulous caching architecture:
-
-- 💾 **3-Tier Details Cache**: Network calls are decoupled using an in-memory LRU cache → Room SQLite DB → web network request fallback. Cached items in Room expire after a configurable 1-hour TTL.
-- ⚡ **Prefetching Playback URLs**: The `DetailViewModel` preemptively resolves and decrypts streaming `.m3u8` playlists in the background as soon as the detail screen is opened. This allows ExoPlayer to load the stream instantly with zero spinner delay when the user clicks Play.
-- 📂 **Network & Media Caching**: 
-  - OkHttp enforces a 5-minute cache on the parsed HTML responses to avoid hammering the servers.
-  - ExoPlayer relies on a custom 200MB disk cache to buffer media packets smoothly and reduce network overhead on cellular connections.
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-- JDK 17
-- Android Studio Ladybug (or newer)
-- Android SDK 35 (Target) / Android SDK 26 (Minimum)
-
-### Build Commands
-
-You can build the app via the command-line using Gradle:
+**Requirements:** JDK 17 · Android Studio Ladybug or newer · Android SDK 35 (min SDK 26)
 
 ```bash
-# Clean build environment
-./gradlew clean
-
-# Build Debug APK (installs on emulator)
-./gradlew assembleDebug
-
-# Build optimized Release APK (Proguard/R8 enabled)
-./gradlew assembleRelease
-
-# Install Debug APK directly to a connected device
-./gradlew installDebug
+git clone https://github.com/nestchao/XiaobaoYingYuan_APK.git
 ```
 
-The compiled APK will be available in:
-`app/build/outputs/apk/release/app-release.apk` (for Release builds) or `app/build/outputs/apk/debug/app-debug.apk` (for Debug builds).
+```bash
+cd XiaobaoYingYuan_APK
+```
+
+```bash
+./gradlew assembleDebug
+```
+
+| Command | Result |
+|---|---|
+| `./gradlew assembleDebug` | `app/build/outputs/apk/debug/app-debug.apk` |
+| `./gradlew assembleRelease` | `app/build/outputs/apk/release/app-release-unsigned.apk` (R8 + resource shrinking) |
+| `./gradlew installDebug` | Builds and installs on a connected device or emulator |
+| `./gradlew testDebugUnitTest` | Runs the JVM unit tests (parsers, ViewModels) |
 
 ---
 
-## 📦 Releases
+## 🗂 Project structure
 
-Official releases, including pre-compiled APKs, are published on the [GitHub Releases](https://github.com/nestchao/XiaobaoYingYuan_APK/releases) section of this repository.
+```
+app/src/main/java/com/xiaobaotv/app/
+├── data/
+│   ├── cache/        # DetailPageCache, PlaybackUrlCache (in-memory LRU)
+│   ├── local/        # Room DB, DAOs, entities, UserPreferences (DataStore)
+│   ├── model/        # Network DTOs (Moshi)
+│   ├── parser/       # Jsoup parsers: VodDetail, PlayPage, SearchPage, ShowPage
+│   ├── remote/       # Retrofit API (XiaobaoApi)
+│   └── repository/   # Repository implementations
+├── domain/
+│   ├── model/        # VodContent, VideoSource, Episode, …
+│   ├── repository/   # Repository interfaces
+│   └── usecase/      # Thin use cases
+├── di/               # Hilt modules
+└── ui/
+    ├── components/   # Glass, chips, shimmer, poster cards, progress ring, …
+    ├── navigation/   # Adaptive scaffold (bottom bar / rail / sidebar), NavHost
+    ├── theme/        # Aurora colours, type, shapes
+    └── home · detail · player · category · search · history · profile
+website/              # Static landing page (GitHub Pages)
+docs/                 # Design docs and screenshots
+```
 
-To install:
-1. Enable **Install Unknown Apps** in your Android Security Settings.
-2. Download the latest `app-release.apk` from the Releases tab.
-3. Open and install!
+Further reading: [docs/UI_REDESIGN.md](docs/UI_REDESIGN.md) (design system, motion spec, tablet layouts) · [docs/PLAYER_UPGRADE.md](docs/PLAYER_UPGRADE.md) · [website/README.md](website/README.md)
 
 ---
 
-*Disclaimer: This app is a video scraper client that extracts information from publicly available web sources. We do not host or upload any media content.*
+## 📝 Changelog
+
+| Version | Date | Highlights |
+|---|---|---|
+| [**v1.3.0**](https://github.com/nestchao/XiaobaoYingYuan_APK/releases/tag/v1.3.0) · Aurora Player | 2026-11-15 | Five-button transport, screen lock, PiP, long-press 2×, scrub time bubble, tablet episode panel |
+| [v1.2.0](https://github.com/nestchao/XiaobaoYingYuan_APK/releases/tag/v1.2.0) · Aurora UI | 2026-11-14 | Full redesign: glass design system, dual themes, phone and tablet navigation, all eight screens redrawn |
+| [v1.1.0](https://github.com/nestchao/XiaobaoYingYuan_APK/releases/tag/v1.1.0) | 2026-09-14 | Infinite search paging, swipe seek preview, brightness and volume gestures, light theme |
+| [v1.0.0](https://github.com/nestchao/XiaobaoYingYuan_APK/releases/tag/v1.0.0) | 2026-06-27 | First release: home carousel, categories, search, multi-source player, auto-next, caching |
+
+---
+
+## 🇨🇳 简体中文
+
+**小宝影院**是一款免费、无广告、无需登录的 Android 观影应用，采用 Jetpack Compose 打造的「极光」设计语言：
+
+- 午夜 / 瓷白双主题、玻璃质感与弹簧动效
+- 手机悬浮导航、平板图标栏、大屏侧边栏三端自适应
+- v1.3 全新播放器：五键中控、锁屏、画中画、长按 2× 倍速、拖动时间气泡
+- 观看历史与偏好仅保存在本地
+
+👉 [下载最新版本](https://github.com/nestchao/XiaobaoYingYuan_APK/releases/latest) · [访问官网](https://nestchao.github.io/XiaobaoYingYuan_APK/)，需要 Android 8.0 及以上。
+
+---
+
+## ⚠️ Disclaimer
+
+This project is a client for publicly available web pages and is meant for learning and research only. It does **not** host, upload or distribute any video content. All media belongs to its respective owners.
+
+<div align="center">
+<sub>Made with Jetpack Compose · <a href="https://nestchao.github.io/XiaobaoYingYuan_APK/">nestchao.github.io/XiaobaoYingYuan_APK</a></sub>
+</div>
