@@ -30,6 +30,7 @@ import javax.inject.Inject
 data class PlayerUiState(
     val isLoading: Boolean = false,
     val vodId: Int = 0,
+    val vodTitle: String? = null,
     val sources: List<VideoSource> = emptyList(),
     val currentSourceIndex: Int = 0,
     val currentEpisodeIndex: Int = 0,
@@ -90,6 +91,7 @@ class PlayerViewModel @Inject constructor(
             // Load vod detail for name/pic
             contentRepository.getVodDetail(vodId).onSuccess { content ->
                 vodContent = content
+                _uiState.update { it.copy(vodTitle = content.name) }
             }
 
             // Check history for saved position and source index
@@ -144,6 +146,26 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Switches playback line while staying on the same episode position.
+     *
+     * Mirrors [selectEpisode]: persist progress first, then resolve the URL of
+     * the same episode on the new source. Safe to call with the already-active
+     * index (no-op) or with an out-of-range index (no-op).
+     */
+    fun selectSource(sourceIndex: Int) {
+        cancelAutoNext()
+        val currentState = _uiState.value
+        if (sourceIndex == currentState.currentSourceIndex) return
+        val source = currentState.sources.getOrNull(sourceIndex) ?: return
+        val episode = source.episodes.getOrNull(currentState.currentEpisodeIndex) ?: return
+
+        // Runs on Main.immediate: progress is read before the state swap below.
+        viewModelScope.launch { saveProgressInternal() }
+        _uiState.update { it.copy(currentSourceIndex = sourceIndex, savedPositionMs = 0L) }
+        loadPlaybackUrl(episode)
+    }
+
     fun triggerAutoNextCountdown() {
         autoNextJob?.cancel()
         autoNextJob = viewModelScope.launch {
@@ -162,6 +184,20 @@ class PlayerViewModel @Inject constructor(
         autoNextJob?.cancel()
         autoNextJob = null
         _uiState.update { it.copy(showAutoNextOverlay = false, autoNextCountdown = 5) }
+    }
+
+    /** Persist the auto-next preference from the player's episode sheet. */
+    fun setAutoNextEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            userPreferences.setAutoNextEnabled(enabled)
+        }
+    }
+
+    /** Skip the countdown and jump straight to the next episode. */
+    fun playNextEpisodeNow() {
+        val nextIndex = _uiState.value.currentEpisodeIndex + 1
+        cancelAutoNext()
+        selectEpisode(nextIndex)
     }
 
     fun retryPlayback() {

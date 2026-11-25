@@ -74,13 +74,19 @@ class HomeViewModel @Inject constructor(
                 val tvSeries = tvResult.getOrDefault(emptyList())
                 val anime = animeResult.getOrDefault(emptyList())
 
+                // The hero banner must never be empty: fall back to TV or anime
+                // when the movie endpoint is slow or failing.
+                val hero = movies.ifEmpty { tvSeries }.ifEmpty { anime }.take(5)
+                val allEmpty = movies.isEmpty() && tvSeries.isEmpty() && anime.isEmpty()
+
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        heroItems = movies.take(5),
+                        heroItems = hero,
                         hotMovies = movies,
                         hotTvSeries = tvSeries,
-                        hotAnime = anime
+                        hotAnime = anime,
+                        error = if (allEmpty) "内容加载失败，请检查网络后下拉刷新" else null
                     )
                 }
             } catch (e: Exception) {

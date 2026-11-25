@@ -1,51 +1,144 @@
 package com.xiaobaotv.app.ui.player
 
-import android.view.View
+import android.app.PictureInPictureParams
 import android.content.Context
 import android.media.AudioManager
+import android.os.Build
 import android.provider.Settings
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.material.icons.filled.Brightness6
-import androidx.compose.material.icons.filled.VolumeUp
-import androidx.compose.material.icons.filled.VolumeOff
-import kotlin.math.roundToInt
+import android.util.Rational
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
-import androidx.annotation.OptIn
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.media3.common.PlaybackException
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.displayCutoutPadding
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material.icons.filled.Speed
-import androidx.compose.material.icons.filled.FastForward
-import androidx.compose.material.icons.filled.FastRewind
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.VolumeOff
+import androidx.compose.material.icons.automirrored.rounded.VolumeUp
+import androidx.compose.material.icons.rounded.AspectRatio
+import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.Brightness6
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.ErrorOutline
+import androidx.compose.material.icons.rounded.FastForward
+import androidx.compose.material.icons.rounded.FastRewind
+import androidx.compose.material.icons.rounded.Forward10
+import androidx.compose.material.icons.rounded.GridView
+import androidx.compose.material.icons.rounded.Layers
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.LockOpen
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PictureInPictureAlt
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Replay10
+import androidx.compose.material.icons.rounded.SkipNext
+import androidx.compose.material.icons.rounded.SkipPrevious
+import androidx.compose.material.icons.rounded.Speed
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -53,17 +146,48 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.ForwardingPlayer
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import com.xiaobaotv.app.domain.model.VideoSource
+import com.xiaobaotv.app.ui.components.EpisodeChip
+import com.xiaobaotv.app.ui.components.GlassPillButton
+import com.xiaobaotv.app.ui.components.GradientPillButton
+import com.xiaobaotv.app.ui.components.ProgressRing
+import com.xiaobaotv.app.ui.components.SelectChip
+import com.xiaobaotv.app.ui.components.TintedIconButton
+import com.xiaobaotv.app.ui.components.WindowSize
+import com.xiaobaotv.app.ui.components.XiaobaoSpinner
+import com.xiaobaotv.app.ui.components.pressScale
+import com.xiaobaotv.app.ui.components.rememberWindowSize
 import com.xiaobaotv.app.ui.navigation.LocalFullScreenState
+import com.xiaobaotv.app.ui.theme.LocalXiaobaoColors
+import com.xiaobaotv.app.ui.theme.Motion
+import com.xiaobaotv.app.ui.theme.Radii
 import kotlinx.coroutines.delay
 import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
-@OptIn(UnstableApi::class)
+// ─────────────────────────────────────────────────────────────────────────────
+// Player — an immersive, edge-to-edge theatre.
+//
+// All playback / gesture / lifecycle behaviour is unchanged from the previous
+// implementation. Only the chrome was rebuilt: frosted floating panels, a
+// gradient morphing play button, a hand-drawn scrub bar with buffered progress,
+// animated brightness/volume medallions, a double-tap ripple, a glass episode
+// sheet and a countdown ring for auto-next.
+// ─────────────────────────────────────────────────────────────────────────────
+
+private val SpeedOptions = listOf(0.75f, 1.0f, 1.25f, 1.5f, 2.0f)
+private const val AutoNextTotal = 5
+
+@androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun PlayerScreen(
     vodId: Int,
@@ -73,13 +197,21 @@ fun PlayerScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val activity = context as? ComponentActivity
     val fullScreenState = LocalFullScreenState.current
-    val window = (context as? ComponentActivity)?.window
-    val audioManager = remember(context) { context.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
+    val window = activity?.window
+    val decorView = LocalView.current
+    val windowSize = rememberWindowSize()
+    val audioManager = remember(context) {
+        context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+    }
+
+    // ── Brightness / volume gesture feedback ────────────────────────────────
     var adjustment by remember { mutableStateOf<String?>(null) }
     var adjustmentLevel by remember { mutableFloatStateOf(0f) }
     var adjusting by remember { mutableStateOf(false) }
     var adjustmentRevision by remember { mutableIntStateOf(0) }
+    var lastAdjustmentLabel by remember { mutableStateOf("亮度") }
 
     // Brightness is local to this player window; restore the prior override on exit.
     DisposableEffect(window) {
@@ -96,13 +228,18 @@ fun PlayerScreen(
             adjustment = null
         }
     }
+    LaunchedEffect(adjustment) {
+        adjustment?.let { lastAdjustmentLabel = it }
+    }
 
-    // Custom Compose overlay states
+    // ── Custom Compose overlay states ───────────────────────────────────────
     var showControls by remember { mutableStateOf(true) }
     var skipText by remember { mutableStateOf<String?>(null) }
+    var skipRevision by remember { mutableIntStateOf(0) }
+    var lastSkipText by remember { mutableStateOf("") }
     var isPlaying by remember { mutableStateOf(false) }
-    var currentPlaybackSpeed by remember { mutableStateOf(1.0f) }
-    var isSpeedMenuExpanded by remember { mutableStateOf(false) }
+    var currentPlaybackSpeed by remember { mutableFloatStateOf(1.0f) }
+    var showSpeedPicker by remember { mutableStateOf(false) }
 
     var showEpisodes by remember { mutableStateOf(false) }
     var isBuffering by remember { mutableStateOf(false) }
@@ -114,11 +251,29 @@ fun PlayerScreen(
     var seekPreviewMs by remember { mutableLongStateOf(0L) }
     var seekStartMs by remember { mutableLongStateOf(0L) }
 
-    // Dynamic position values for slider and timestamps
+    // Dynamic position values for the scrub bar and timestamps.
     var currentPosMs by remember { mutableLongStateOf(0L) }
     var totalDurationMs by remember { mutableLongStateOf(0L) }
+    var bufferedPercent by remember { mutableIntStateOf(0) }
 
-    // Thread-safe refs — updated whenever uiState changes
+    // ── Player chrome feature states ───────────────────────────────────────
+    val haptics = LocalHapticFeedback.current
+    var isLocked by remember { mutableStateOf(false) }
+    var showUnlockButton by remember { mutableStateOf(false) }
+    var showLockHint by remember { mutableStateOf(false) }
+    var showMoreMenu by remember { mutableStateOf(false) }
+    var resizeMode by remember { mutableIntStateOf(AspectRatioFrameLayout.RESIZE_MODE_FIT) }
+    var showRemaining by remember { mutableStateOf(false) }
+    var isSpeedBoost by remember { mutableStateOf(false) }
+    val playerViewRef = remember { arrayOfNulls<PlayerView>(1) }
+    val latestSpeed = rememberUpdatedState(currentPlaybackSpeed)
+    val inPip by PlayerPipBridge.inPip.collectAsStateWithLifecycle()
+
+    LaunchedEffect(resizeMode) {
+        playerViewRef[0]?.resizeMode = resizeMode
+    }
+
+    // Thread-safe refs — updated whenever uiState changes.
     val hasNextRef = remember { java.util.concurrent.atomic.AtomicBoolean(false) }
     val hasPrevRef = remember { java.util.concurrent.atomic.AtomicBoolean(false) }
     val autoNextEnabledRef = remember { java.util.concurrent.atomic.AtomicBoolean(false) }
@@ -128,11 +283,60 @@ fun PlayerScreen(
         autoNextEnabledRef.set(uiState.autoNextEnabled)
     }
 
-    // Auto-hide controls after inactivity
-    LaunchedEffect(showControls, isPlaying, isSpeedMenuExpanded, showEpisodes, scrubFraction, controlInteraction, adjusting, isHorizontalSeeking) {
-        if (showControls && isPlaying && !isSpeedMenuExpanded && !showEpisodes && scrubFraction == null && !adjusting && !isHorizontalSeeking) {
-            delay(5000L)
+    // Auto-hide controls after inactivity.
+    LaunchedEffect(
+        showControls,
+        isPlaying,
+        showSpeedPicker,
+        showEpisodes,
+        scrubFraction,
+        controlInteraction,
+        adjusting,
+        isHorizontalSeeking,
+        uiState.showAutoNextOverlay,
+        showMoreMenu,
+        isSpeedBoost,
+        isLocked
+    ) {
+        if (showControls && isPlaying && !showSpeedPicker && !showEpisodes &&
+            scrubFraction == null && !adjusting && !isHorizontalSeeking &&
+            !uiState.showAutoNextOverlay && !showMoreMenu && !isSpeedBoost && !isLocked
+        ) {
+            delay(4500L)
             showControls = false
+        }
+    }
+
+    // Locked chrome: keep the screen clean and ignore accidental touches.
+    LaunchedEffect(isLocked) {
+        if (isLocked) {
+            showControls = false
+            showSpeedPicker = false
+            showEpisodes = false
+            showMoreMenu = false
+            showUnlockButton = true
+            showLockHint = true
+            delay(2200L)
+            showLockHint = false
+        }
+    }
+    LaunchedEffect(isLocked, showUnlockButton) {
+        if (isLocked && showUnlockButton) {
+            delay(3200L)
+            showUnlockButton = false
+        }
+    }
+
+    // Hide chrome while floating in picture-in-picture.
+    LaunchedEffect(inPip) {
+        if (inPip) {
+            showControls = false
+            showSpeedPicker = false
+            showEpisodes = false
+            showMoreMenu = false
+            isLocked = false
+        } else {
+            showControls = true
         }
     }
 
@@ -143,9 +347,10 @@ fun PlayerScreen(
         }
     }
 
-    // Reset skip indicator after a short delay
-    LaunchedEffect(skipText) {
+    // Reset the double-tap indicator after a short delay.
+    LaunchedEffect(skipText, skipRevision) {
         if (skipText != null) {
+            lastSkipText = skipText.orEmpty()
             delay(800L)
             skipText = null
         }
@@ -161,7 +366,7 @@ fun PlayerScreen(
             .setMediaSourceFactory(DefaultMediaSourceFactory(cacheDataSourceFactory))
             .build()
 
-        // Wrap to expose next/prev commands
+        // Wrap to expose next/prev commands.
         object : ForwardingPlayer(basePlayer) {
             override fun isCommandAvailable(command: Int): Boolean {
                 return getAvailableCommands().contains(command)
@@ -194,7 +399,7 @@ fun PlayerScreen(
         }
     }
 
-    // Listen for playback state changes
+    // Listen for playback state changes.
     DisposableEffect(exoPlayer) {
         val listener = object : Player.Listener {
             override fun onIsPlayingChanged(playing: Boolean) {
@@ -210,9 +415,9 @@ fun PlayerScreen(
 
             override fun onPlaybackStateChanged(playbackState: Int) {
                 isBuffering = playbackState == Player.STATE_BUFFERING
-                if (playbackState == Player.STATE_ENDED
-                    && hasNextRef.get()
-                    && autoNextEnabledRef.get()
+                if (playbackState == Player.STATE_ENDED &&
+                    hasNextRef.get() &&
+                    autoNextEnabledRef.get()
                 ) {
                     viewModel.triggerAutoNextCountdown()
                 }
@@ -241,11 +446,12 @@ fun PlayerScreen(
         }
     }
 
-    // Position polling — update slider values and feed position to ViewModel
+    // Position polling — update the scrub bar and feed position to the ViewModel.
     LaunchedEffect(exoPlayer) {
         while (true) {
             currentPosMs = exoPlayer.currentPosition
             totalDurationMs = exoPlayer.duration.coerceAtLeast(0L)
+            bufferedPercent = exoPlayer.bufferedPercentage
             if (exoPlayer.isPlaying) {
                 viewModel.updatePlaybackState(currentPosMs, totalDurationMs)
             }
@@ -253,7 +459,7 @@ fun PlayerScreen(
         }
     }
 
-    // Lifecycle-aware save on pause/stop
+    // Lifecycle-aware save on pause/stop.
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -274,27 +480,111 @@ fun PlayerScreen(
         }
     }
 
-    // Full-screen immersive mode toggle
-    val activity = LocalContext.current as? ComponentActivity
+    // Full-screen immersive mode (modern WindowInsetsControllerCompat).
     LaunchedEffect(Unit) {
         fullScreenState.isActive = true
-        activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-        @Suppress("DEPRECATION")
-        activity?.window?.decorView?.systemUiVisibility =
-            View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY or
-            View.SYSTEM_UI_FLAG_FULLSCREEN or
-            View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+        window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
-    DisposableEffect(Unit) {
+    DisposableEffect(decorView, window) {
+        val insetsController = window?.let { WindowCompat.getInsetsController(it, decorView) }
+        insetsController?.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        insetsController?.hide(WindowInsetsCompat.Type.systemBars())
         onDispose {
             fullScreenState.isActive = false
-            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-            @Suppress("DEPRECATION")
-            activity?.window?.decorView?.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
+            window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            insetsController?.show(WindowInsetsCompat.Type.systemBars())
+            insetsController?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
         }
+    }
+
+    // ── Chrome actions ──────────────────────────────────────────────────────
+    fun seekRelative(deltaMs: Long) {
+        if (uiState.isLoading || totalDurationMs <= 0L || !exoPlayer.isCurrentMediaItemSeekable) return
+        val target = (exoPlayer.currentPosition + deltaMs).coerceIn(0L, totalDurationMs)
+        exoPlayer.seekTo(target)
+        skipText = if (deltaMs > 0) "快进 10s" else "快退 10s"
+        skipRevision++
+        controlInteraction++
+    }
+
+    fun lockControls() {
+        isLocked = true
+        showControls = false
+        showSpeedPicker = false
+        showEpisodes = false
+        showMoreMenu = false
+        showUnlockButton = true
+        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+    }
+
+    fun unlockControls() {
+        isLocked = false
+        showUnlockButton = false
+        showControls = true
+        controlInteraction++
+        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+    }
+
+    fun enterPipMode(): Boolean {
+        val act = activity ?: return false
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return false
+        return try {
+            showControls = false
+            showMoreMenu = false
+            act.enterPictureInPictureMode(
+                PictureInPictureParams.Builder()
+                    .setAspectRatio(Rational(16, 9))
+                    .build()
+            )
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    DisposableEffect(activity) {
+        PlayerPipBridge.enterPip = { enterPipMode() }
+        onDispose {
+            if (PlayerPipBridge.enterPip != null) PlayerPipBridge.enterPip = null
+        }
+    }
+
+    // ── Derived display values ──────────────────────────────────────────────
+    val visibleError = uiState.error ?: playbackError
+    val controlsVisible = showControls && !adjusting
+    val episodes = uiState.sources.getOrNull(uiState.currentSourceIndex)?.episodes.orEmpty()
+    val sourceName = uiState.sources.getOrNull(uiState.currentSourceIndex)?.name
+    val currentEpisodeTitle = episodes.getOrNull(uiState.currentEpisodeIndex)?.name ?: "正在播放"
+    val nextEpisodeName = episodes.getOrNull(uiState.currentEpisodeIndex + 1)?.name
+    val episodeLabel = if (episodes.isEmpty()) null else {
+        "${(uiState.currentEpisodeIndex + 1).coerceIn(1, episodes.size)} / ${episodes.size}"
+    }
+    val playerTitle = uiState.vodTitle?.takeIf { it.isNotBlank() } ?: currentEpisodeTitle
+    val playerSubtitle = buildString {
+        if (episodes.size > 1) {
+            append("第 ${uiState.currentEpisodeIndex + 1} 集")
+            if (!currentEpisodeTitle.isBlank() && currentEpisodeTitle != playerTitle) {
+                append(" · ")
+                append(currentEpisodeTitle)
+            }
+        }
+        if (!sourceName.isNullOrBlank()) {
+            if (isNotEmpty()) append(" · ")
+            append("线路 ")
+            append(sourceName)
+        }
+    }.takeIf { it.isNotBlank() }
+    val skipForward = lastSkipText.startsWith("快进")
+    val autoNextBottomPadding by animateDpAsState(
+        targetValue = if (controlsVisible) 148.dp else 28.dp,
+        animationSpec = tween(Motion.Medium.toInt()),
+        label = "autoNextBottomPadding"
+    )
+    val gestureHint = if (windowSize == WindowSize.Compact) {
+        null
+    } else {
+        "双击快退/快进 · 长按 2× 倍速 · 左亮度 右音量"
     }
 
     Box(
@@ -302,23 +592,29 @@ fun PlayerScreen(
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        // Video native renderer — XML controls disabled, Compose overlay handles everything
+        // Video native renderer — XML controls disabled, Compose overlay owns everything.
         AndroidView(
             factory = { ctx ->
                 PlayerView(ctx).apply {
                     player = exoPlayer
                     useController = false
+                    // Avoid a white flash while the first frame is decoded.
+                    setBackgroundColor(android.graphics.Color.BLACK)
+                    setShutterBackgroundColor(android.graphics.Color.BLACK)
+                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                    playerViewRef[0] = this
                 }
             },
             modifier = Modifier.fillMaxSize()
         )
 
         // Compose owns gestures above the native video surface. Controls above
-        // this layer keep their own touch handling, including the seek slider.
+        // this layer keep their own touch handling, including the scrub bar.
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(window, audioManager) {
+                .pointerInput(window, audioManager, isLocked) {
+                    if (isLocked) return@pointerInput
                     var brightnessGesture = false
                     var level = 0f
                     var maxVolume = 1
@@ -330,45 +626,77 @@ fun PlayerScreen(
                             adjustmentRevision++
                             if (brightnessGesture) {
                                 val systemBrightness = Settings.System.getInt(
-                                    context.contentResolver, Settings.System.SCREEN_BRIGHTNESS, 128
+                                    context.contentResolver,
+                                    Settings.System.SCREEN_BRIGHTNESS,
+                                    128
                                 ) / 255f
                                 level = (window?.attributes?.screenBrightness?.takeIf { it >= 0f }
                                     ?: systemBrightness).coerceIn(0.02f, 1f)
                                 adjustment = "亮度"
                             } else {
-                                maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC).coerceAtLeast(1)
-                                minVolume = if (android.os.Build.VERSION.SDK_INT >= 28)
-                                    audioManager.getStreamMinVolume(AudioManager.STREAM_MUSIC) else 0
-                                level = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat() / maxVolume
-                                adjustment = if (audioManager.isVolumeFixed) "音量由设备控制" else "音量"
+                                maxVolume = audioManager
+                                    .getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+                                    .coerceAtLeast(1)
+                                minVolume = if (android.os.Build.VERSION.SDK_INT >= 28) {
+                                    audioManager.getStreamMinVolume(AudioManager.STREAM_MUSIC)
+                                } else {
+                                    0
+                                }
+                                level = audioManager
+                                    .getStreamVolume(AudioManager.STREAM_MUSIC)
+                                    .toFloat() / maxVolume
+                                adjustment =
+                                    if (audioManager.isVolumeFixed) "音量由设备控制" else "音量"
                             }
                             adjustmentLevel = level
                         },
                         onVerticalDrag = { change, dragAmount ->
                             change.consume()
                             level = (level - dragAmount / (size.height * 0.65f).coerceAtLeast(1f))
-                                .coerceIn(if (brightnessGesture) 0.02f else minVolume.toFloat() / maxVolume, 1f)
+                                .coerceIn(
+                                    if (brightnessGesture) 0.02f else minVolume.toFloat() / maxVolume,
+                                    1f
+                                )
                             if (brightnessGesture) {
-                                window?.let { it.attributes = it.attributes.apply { screenBrightness = level } }
+                                window?.let {
+                                    it.attributes = it.attributes.apply { screenBrightness = level }
+                                }
                                 adjustmentLevel = level
                             } else {
                                 if (!audioManager.isVolumeFixed) {
-                                    audioManager.setStreamVolume(AudioManager.STREAM_MUSIC,
-                                        (level * maxVolume).roundToInt().coerceIn(minVolume, maxVolume), 0)
+                                    audioManager.setStreamVolume(
+                                        AudioManager.STREAM_MUSIC,
+                                        (level * maxVolume).roundToInt()
+                                            .coerceIn(minVolume, maxVolume),
+                                        0
+                                    )
                                 }
-                                adjustmentLevel = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat() / maxVolume
+                                adjustmentLevel = audioManager
+                                    .getStreamVolume(AudioManager.STREAM_MUSIC)
+                                    .toFloat() / maxVolume
                             }
                         },
-                        onDragEnd = { adjusting = false; controlInteraction++ },
-                        onDragCancel = { adjusting = false; controlInteraction++ }
+                        onDragEnd = {
+                            adjusting = false
+                            controlInteraction++
+                        },
+                        onDragCancel = {
+                            adjusting = false
+                            controlInteraction++
+                        }
                     )
                 }
-                .pointerInput(exoPlayer, totalDurationMs) {
+                .pointerInput(exoPlayer, totalDurationMs, isLocked) {
+                    if (isLocked) return@pointerInput
                     var draggedMs = 0f
                     detectHorizontalDragGestures(
                         onDragStart = {
-                            if (!uiState.isLoading && totalDurationMs > 0L && exoPlayer.isCurrentMediaItemSeekable) {
-                                seekStartMs = exoPlayer.currentPosition.coerceIn(0L, totalDurationMs)
+                            if (!uiState.isLoading &&
+                                totalDurationMs > 0L &&
+                                exoPlayer.isCurrentMediaItemSeekable
+                            ) {
+                                seekStartMs =
+                                    exoPlayer.currentPosition.coerceIn(0L, totalDurationMs)
                                 seekPreviewMs = seekStartMs
                                 draggedMs = 0f
                                 isHorizontalSeeking = true
@@ -382,7 +710,8 @@ fun PlayerScreen(
                             // long videos quicker to navigate while retaining precision
                             // for shorter, slower drags.
                             draggedMs += dragAmount / size.width.coerceAtLeast(1) * 180_000f
-                            seekPreviewMs = (seekStartMs + draggedMs.toLong()).coerceIn(0L, totalDurationMs)
+                            seekPreviewMs = (seekStartMs + draggedMs.toLong())
+                                .coerceIn(0L, totalDurationMs)
                         },
                         onDragEnd = {
                             if (isHorizontalSeeking) {
@@ -394,394 +723,1970 @@ fun PlayerScreen(
                         onDragCancel = { isHorizontalSeeking = false }
                     )
                 }
-                .pointerInput(exoPlayer) {
+                .pointerInput(exoPlayer, isLocked, uiState.isLoading) {
+                    if (isLocked) return@pointerInput
                     detectTapGestures(
+                        onPress = {
+                            tryAwaitRelease()
+                            if (isSpeedBoost) {
+                                isSpeedBoost = false
+                                exoPlayer.setPlaybackSpeed(latestSpeed.value)
+                            }
+                        },
+                        onLongPress = {
+                            if (!uiState.isLoading && exoPlayer.isPlaying && !isSpeedBoost) {
+                                isSpeedBoost = true
+                                exoPlayer.setPlaybackSpeed(2f)
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                controlInteraction++
+                            }
+                        },
                         onDoubleTap = onDoubleTap@{ offset ->
-                            if (uiState.isLoading || !exoPlayer.isCurrentMediaItemSeekable || totalDurationMs <= 0) return@onDoubleTap
+                            if (uiState.isLoading ||
+                                !exoPlayer.isCurrentMediaItemSeekable ||
+                                totalDurationMs <= 0
+                            ) {
+                                return@onDoubleTap
+                            }
                             val seekAmount = if (offset.x < size.width / 2f) -10000L else 10000L
                             val target = (exoPlayer.currentPosition + seekAmount)
                                 .coerceIn(0L, totalDurationMs.coerceAtLeast(0))
                             exoPlayer.seekTo(target)
                             skipText = if (seekAmount > 0) "快进 10s" else "快退 10s"
+                            skipRevision++
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         },
                         onTap = {
                             showControls = !showControls
+                            if (!showControls) {
+                                showSpeedPicker = false
+                                showMoreMenu = false
+                            }
                         }
                     )
                 }
         )
 
-        // Loading indicator
+        // Buffering / initial loading.
         if (uiState.isLoading || isBuffering) {
-            CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.Center),
-                color = MaterialTheme.colorScheme.primary
-            )
+            BufferingIndicator(modifier = Modifier.align(Alignment.Center))
         }
 
-        val visibleError = uiState.error ?: playbackError
+        // Playback error.
         if (visibleError != null) {
-            Column(
-                modifier = Modifier.align(Alignment.Center).padding(24.dp)
-                    .background(Color.Black.copy(alpha = 0.85f), RoundedCornerShape(16.dp)).padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(visibleError, color = Color.White)
-                TextButton(onClick = {
+            PlayerErrorCard(
+                message = visibleError,
+                onRetry = {
                     playbackError = null
-                    if (uiState.error != null) viewModel.retryPlayback()
-                    else { exoPlayer.prepare(); exoPlayer.play() }
-                }) { Text("重试", color = Color.White) }
-            }
-        }
-
-        // Skip indicator overlay
-        skipText?.let { text ->
-            Box(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .background(Color.Black.copy(alpha = 0.75f), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                Text(text = text, color = Color.White, fontWeight = FontWeight.Bold)
-            }
-        }
-
-        // Full Compose overlay controls
-        AnimatedVisibility(
-            visible = showControls && !adjusting,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                // Top gradient + header
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(80.dp)
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(Color.Black.copy(alpha = 0.8f), Color.Transparent)
-                            )
-                        )
-                        .align(Alignment.TopCenter)
-                )
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .displayCutoutPadding()
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
-                        .align(Alignment.TopStart),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "返回",
-                            tint = Color.White
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = uiState.sources
-                            .getOrNull(uiState.currentSourceIndex)
-                            ?.episodes
-                            ?.getOrNull(uiState.currentEpisodeIndex)
-                            ?.name ?: "正在播放",
-                        color = Color.White,
-                        modifier = Modifier.weight(1f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                // Center play/pause + prev/next
-                if (!uiState.isLoading && !isBuffering && visibleError == null) Row(
-                    modifier = Modifier.align(Alignment.Center),
-                    horizontalArrangement = Arrangement.spacedBy(32.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(
-                        onClick = { exoPlayer.seekToPreviousMediaItem() },
-                        enabled = uiState.hasPreviousEpisode,
-                        colors = IconButtonDefaults.iconButtonColors(
-                            disabledContentColor = Color.Gray.copy(alpha = 0.5f),
-                            contentColor = Color.White
-                        ),
-                        modifier = Modifier
-                            .size(56.dp)
-                            .background(Color.Black.copy(alpha = 0.4f), CircleShape)
-                    ) {
-                        Icon(
-                            Icons.Filled.SkipPrevious,
-                            contentDescription = "上一集",
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-
-                    IconButton(
-                        onClick = {
-                            controlInteraction++
-                            if (isPlaying) exoPlayer.pause() else {
-                                if (exoPlayer.playbackState == Player.STATE_ENDED) exoPlayer.seekTo(0)
-                                exoPlayer.play()
-                            }
-                        },
-                        modifier = Modifier
-                            .size(72.dp)
-                            .background(MaterialTheme.colorScheme.primary, CircleShape)
-                    ) {
-                        Icon(
-                            imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            contentDescription = if (isPlaying) "暂停" else "播放",
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(44.dp)
-                        )
-                    }
-
-                    IconButton(
-                        onClick = { exoPlayer.seekToNextMediaItem() },
-                        enabled = uiState.hasNextEpisode,
-                        colors = IconButtonDefaults.iconButtonColors(
-                            disabledContentColor = Color.Gray.copy(alpha = 0.5f),
-                            contentColor = Color.White
-                        ),
-                        modifier = Modifier
-                            .size(56.dp)
-                            .background(Color.Black.copy(alpha = 0.4f), CircleShape)
-                    ) {
-                        Icon(
-                            Icons.Filled.SkipNext,
-                            contentDescription = "下一集",
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                }
-
-                // Bottom gradient + timeline + speed
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(160.dp)
-                        .background(
-                            Brush.verticalGradient(
-                                listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))
-                            )
-                        )
-                        .align(Alignment.BottomCenter)
-                )
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.BottomCenter)
-                        .displayCutoutPadding()
-                        .padding(horizontal = 16.dp, vertical = 12.dp)
-                ) {
-                    // Timeline slider with timestamps
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = formatTime(scrubFraction?.let { (it * totalDurationMs).toLong() } ?: currentPosMs),
-                            color = Color.White,
-                            fontSize = 12.sp
-                        )
-
-                        Slider(
-                            value = scrubFraction ?: if (totalDurationMs > 0) {
-                                (currentPosMs.toFloat() / totalDurationMs).coerceIn(0f, 1f)
-                            } else 0f,
-                            onValueChange = { percent ->
-                                scrubFraction = percent
-                            },
-                            onValueChangeFinished = {
-                                scrubFraction?.let { exoPlayer.seekTo((it * totalDurationMs).toLong()) }
-                                scrubFraction = null
-                                controlInteraction++
-                            },
-                            enabled = totalDurationMs > 0 && exoPlayer.isCurrentMediaItemSeekable && !uiState.isLoading,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(horizontal = 8.dp),
-                            colors = SliderDefaults.colors(
-                                thumbColor = MaterialTheme.colorScheme.primary,
-                                activeTrackColor = MaterialTheme.colorScheme.primary,
-                                inactiveTrackColor = Color.Gray.copy(alpha = 0.5f)
-                            )
-                        )
-
-                        Text(
-                            text = formatTime(totalDurationMs),
-                            color = Color.White,
-                            fontSize = 12.sp
-                        )
-                    }
-
-                    // Speed selector
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("左侧滑动调亮度 · 右侧滑动调音量",
-                            color = Color.White.copy(alpha = 0.75f),
-                            style = MaterialTheme.typography.labelSmall,
-                            modifier = Modifier.weight(1f), maxLines = 2)
-                        TextButton(onClick = { showEpisodes = true }, enabled = uiState.sources.isNotEmpty()) {
-                            Text("选集", color = Color.White)
-                        }
-                        Spacer(Modifier.width(8.dp))
-                        Box {
-                            TextButton(onClick = { isSpeedMenuExpanded = true }) {
-                                Icon(
-                                    Icons.Default.Speed,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "${currentPlaybackSpeed}x",
-                                    color = Color.White
-                                )
-                            }
-
-                            DropdownMenu(
-                                expanded = isSpeedMenuExpanded,
-                                onDismissRequest = { isSpeedMenuExpanded = false }
-                            ) {
-                                listOf(0.75f, 1.0f, 1.25f, 1.5f, 2.0f).forEach { speed ->
-                                    DropdownMenuItem(
-                                        text = { Text("${speed}x") },
-                                        onClick = {
-                                            currentPlaybackSpeed = speed
-                                            exoPlayer.setPlaybackSpeed(speed)
-                                            isSpeedMenuExpanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        adjustment?.let { label ->
-            Surface(
-                modifier = Modifier.align(Alignment.Center).width(200.dp),
-                color = Color(0xEE182133), contentColor = Color.White,
-                shape = RoundedCornerShape(24.dp)
-            ) {
-                Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        if (label == "亮度") Icons.Default.Brightness6
-                        else if (adjustmentLevel == 0f) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
-                        contentDescription = null, modifier = Modifier.size(32.dp)
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Text(label + " " + (adjustmentLevel * 100).roundToInt() + "%",
-                        style = MaterialTheme.typography.titleMedium)
-                    Spacer(Modifier.height(12.dp))
-                    LinearProgressIndicator(progress = { adjustmentLevel }, modifier = Modifier.fillMaxWidth(),
-                        color = Color.White, trackColor = Color.White.copy(alpha = 0.2f))
-                }
-            }
-        }
-
-        if (showSeekPreview && totalDurationMs > 0L) {
-            val isForward = seekPreviewMs >= seekStartMs
-            Surface(
-                modifier = Modifier.align(Alignment.Center),
-                color = Color.Black.copy(alpha = 0.78f),
-                shape = RoundedCornerShape(14.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(
-                        imageVector = if (isForward) Icons.Filled.FastForward else Icons.Filled.FastRewind,
-                        contentDescription = if (isForward) "快进" else "快退",
-                        tint = Color.White,
-                        modifier = Modifier.size(32.dp)
-                    )
-                    Text(
-                        text = (if (isForward) "快进 " else "快退 ") + formatTime(seekPreviewMs),
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 17.sp
-                    )
-                    Text(
-                        text = formatTime(seekPreviewMs) + " / " + formatTime(totalDurationMs),
-                        color = Color.White.copy(alpha = 0.75f),
-                        fontSize = 12.sp
-                    )
-                    LinearProgressIndicator(
-                        progress = { (seekPreviewMs.toFloat() / totalDurationMs).coerceIn(0f, 1f) },
-                        modifier = Modifier.width(180.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = Color.White.copy(alpha = 0.2f)
-                    )
-                }
-            }
-        }
-
-        if (showEpisodes) {
-            AlertDialog(
-                onDismissRequest = { showEpisodes = false },
-                title = { Text("选集") },
-                text = {
-                    LazyColumn(Modifier.fillMaxWidth().heightIn(max = 360.dp)) {
-                        itemsIndexed(uiState.sources.getOrNull(uiState.currentSourceIndex)?.episodes.orEmpty()) { index, episode ->
-                            TextButton(
-                                onClick = { viewModel.selectEpisode(index); showEpisodes = false; controlInteraction++ },
-                                modifier = Modifier.fillMaxWidth(),
-                                enabled = !uiState.isLoading
-                            ) {
-                                Text(if (index == uiState.currentEpisodeIndex) "正在播放 · ${episode.name}" else episode.name,
-                                    fontWeight = if (index == uiState.currentEpisodeIndex) FontWeight.Bold else FontWeight.Normal)
-                            }
-                        }
+                    if (uiState.error != null) {
+                        viewModel.retryPlayback()
+                    } else {
+                        exoPlayer.prepare()
+                        exoPlayer.play()
                     }
                 },
-                confirmButton = { TextButton(onClick = { showEpisodes = false }) { Text("关闭") } }
+                onSwitchSource = if (uiState.sources.size > 1) {
+                    {
+                        showEpisodes = true
+                        controlInteraction++
+                    }
+                } else {
+                    null
+                },
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(horizontal = 24.dp)
             )
         }
 
-        // Auto-next countdown overlay
-        if (uiState.showAutoNextOverlay) {
+        // Double-tap skip feedback.
+        AnimatedVisibility(
+            visible = skipText != null,
+            modifier = Modifier
+                .align(if (skipForward) Alignment.CenterEnd else Alignment.CenterStart)
+                .padding(horizontal = 36.dp),
+            enter = fadeIn(tween(110)) + scaleIn(
+                initialScale = 0.8f,
+                animationSpec = spring(dampingRatio = 0.55f, stiffness = 520f)
+            ),
+            exit = fadeOut(tween(180)) + scaleOut(
+                targetScale = 0.92f,
+                animationSpec = tween(180)
+            )
+        ) {
+            SkipIndicator(
+                text = lastSkipText,
+                isForward = skipForward,
+                revision = skipRevision
+            )
+        }
+
+        // Tap-away layer for the "more" menu.
+        if (showMoreMenu) {
             Box(
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.16f))
+                    .pointerInput(Unit) {
+                        detectTapGestures { showMoreMenu = false }
+                    }
+            )
+        }
+
+        // Long-press 2× speed badge.
+        AnimatedVisibility(
+            visible = isSpeedBoost,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .displayCutoutPadding()
+                .padding(top = 88.dp),
+            enter = fadeIn(tween(120)) + scaleIn(
+                initialScale = 0.85f,
+                animationSpec = spring(dampingRatio = 0.6f, stiffness = 500f)
+            ),
+            exit = fadeOut(tween(150)) + scaleOut(
+                targetScale = 0.9f,
+                animationSpec = tween(150)
+            )
+        ) {
+            SpeedBoostChip()
+        }
+
+        // ── Top chrome ─────────────────────────────────────────────────────
+        AnimatedVisibility(
+            visible = controlsVisible,
+            modifier = Modifier.align(Alignment.TopCenter),
+            enter = fadeIn(tween(200)) + slideInVertically(
+                animationSpec = tween(Motion.Medium.toInt(), easing = Motion.EmphasizedDecelerate)
+            ) { -it / 2 },
+            exit = fadeOut(tween(170)) + slideOutVertically(
+                animationSpec = tween(Motion.Fast.toInt(), easing = Motion.EmphasizedAccelerate)
+            ) { -it / 2 }
+        ) {
+            PlayerTopBar(
+                title = playerTitle,
+                subtitle = playerSubtitle,
+                episodeLabel = episodeLabel,
+                showMenu = showMoreMenu,
+                resizeMode = resizeMode,
+                canPip = activity != null,
+                onBackClick = onBackClick,
+                onSourceClick = {
+                    showEpisodes = true
+                    showMoreMenu = false
+                    controlInteraction++
+                },
+                onMenuClick = {
+                    showMoreMenu = !showMoreMenu
+                    controlInteraction++
+                },
+                onDismissMenu = { showMoreMenu = false },
+                onLockClick = { lockControls() },
+                onPipClick = { enterPipMode() },
+                onResizeModeChange = { mode ->
+                    resizeMode = mode
+                    showMoreMenu = false
+                    controlInteraction++
+                }
+            )
+        }
+
+        // ── Center transport ───────────────────────────────────────────────
+        AnimatedVisibility(
+            visible = controlsVisible && !isHorizontalSeeking &&
+                visibleError == null && !uiState.isLoading && !isBuffering,
+            modifier = Modifier.align(Alignment.Center),
+            enter = fadeIn(tween(170)) + scaleIn(
+                initialScale = 0.92f,
+                animationSpec = tween(Motion.Fast.toInt())
+            ),
+            exit = fadeOut(tween(130)) + scaleOut(
+                targetScale = 0.94f,
+                animationSpec = tween(130)
+            )
+        ) {
+            PlayerCenterControls(
+                isPlaying = isPlaying,
+                hasPrevious = uiState.hasPreviousEpisode,
+                hasNext = uiState.hasNextEpisode,
+                compact = windowSize == WindowSize.Compact,
+                onPlayPause = {
+                    controlInteraction++
+                    if (isPlaying) {
+                        exoPlayer.pause()
+                    } else {
+                        if (exoPlayer.playbackState == Player.STATE_ENDED) exoPlayer.seekTo(0)
+                        exoPlayer.play()
+                    }
+                },
+                onPrevious = { exoPlayer.seekToPreviousMediaItem() },
+                onNext = { exoPlayer.seekToNextMediaItem() },
+                onSeekBack = { seekRelative(-10_000L) },
+                onSeekForward = { seekRelative(10_000L) }
+            )
+        }
+
+        // ── Bottom chrome ──────────────────────────────────────────────────
+        AnimatedVisibility(
+            visible = controlsVisible,
+            modifier = Modifier.align(Alignment.BottomCenter),
+            enter = fadeIn(tween(200)) + slideInVertically(
+                animationSpec = tween(Motion.Medium.toInt(), easing = Motion.EmphasizedDecelerate)
+            ) { it / 2 },
+            exit = fadeOut(tween(170)) + slideOutVertically(
+                animationSpec = tween(Motion.Fast.toInt(), easing = Motion.EmphasizedAccelerate)
+            ) { it / 2 }
+        ) {
+            Column(
+                modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.Black.copy(alpha = 0.8f))
-                    .padding(16.dp)
-                    .navigationBarsPadding(),
-                contentAlignment = Alignment.Center
+                    .displayCutoutPadding()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                AnimatedVisibility(
+                    visible = showSpeedPicker,
+                    enter = fadeIn(tween(160)) + slideInVertically(
+                        animationSpec = tween(Motion.Fast.toInt())
+                    ) { it / 2 },
+                    exit = fadeOut(tween(120)) + slideOutVertically(
+                        animationSpec = tween(Motion.Fast.toInt())
+                    ) { it / 2 }
                 ) {
-                    Text(
-                        text = "下一集即将播放 ${uiState.autoNextCountdown}s",
-                        color = Color.White,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    TextButton(onClick = { viewModel.cancelAutoNext() }) {
-                        Text("取消", color = Color.White, fontSize = 14.sp)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        SpeedPicker(
+                            currentSpeed = currentPlaybackSpeed,
+                            onSelect = { speed ->
+                                currentPlaybackSpeed = speed
+                                exoPlayer.setPlaybackSpeed(speed)
+                                showSpeedPicker = false
+                                controlInteraction++
+                            }
+                        )
+                    }
+                }
+
+                PlayerBottomPanel(
+                    positionMs = currentPosMs,
+                    durationMs = totalDurationMs,
+                    bufferedPercent = bufferedPercent,
+                    scrubFraction = scrubFraction,
+                    seekEnabled = totalDurationMs > 0L &&
+                        exoPlayer.isCurrentMediaItemSeekable &&
+                        !uiState.isLoading,
+                    speed = currentPlaybackSpeed,
+                    gestureHint = gestureHint,
+                    showRemaining = showRemaining,
+                    onToggleRemaining = { showRemaining = !showRemaining },
+                    onLockClick = { lockControls() },
+                    onScrubStart = {
+                        scrubFraction = if (totalDurationMs > 0L) {
+                            (currentPosMs.toFloat() / totalDurationMs).coerceIn(0f, 1f)
+                        } else {
+                            0f
+                        }
+                    },
+                    onScrub = { fraction -> scrubFraction = fraction },
+                    onScrubFinished = {
+                        scrubFraction?.let {
+                            exoPlayer.seekTo((it * totalDurationMs).toLong())
+                        }
+                        scrubFraction = null
+                        controlInteraction++
+                    },
+                    onEpisodesClick = {
+                        showEpisodes = true
+                        controlInteraction++
+                    },
+                    onSpeedClick = {
+                        showSpeedPicker = !showSpeedPicker
+                        controlInteraction++
+                    },
+                    modifier = Modifier
+                        .widthIn(max = 980.dp)
+                        .fillMaxWidth()
+                )
+            }
+        }
+
+        // ── Brightness / volume medallion ──────────────────────────────────
+        AnimatedVisibility(
+            visible = adjustment != null,
+            modifier = Modifier.align(Alignment.Center),
+            enter = fadeIn(tween(140)) + scaleIn(
+                initialScale = 0.86f,
+                animationSpec = spring(dampingRatio = 0.6f, stiffness = 520f)
+            ),
+            exit = fadeOut(tween(200)) + scaleOut(
+                targetScale = 0.9f,
+                animationSpec = tween(200)
+            )
+        ) {
+            AdjustIndicator(
+                label = lastAdjustmentLabel,
+                level = adjustmentLevel
+            )
+        }
+
+        // ── Horizontal seek preview ────────────────────────────────────────
+        AnimatedVisibility(
+            visible = showSeekPreview && totalDurationMs > 0L,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .displayCutoutPadding()
+                .padding(top = 96.dp),
+            enter = fadeIn(tween(120)) + slideInVertically(
+                animationSpec = tween(Motion.Fast.toInt())
+            ) { -it / 3 },
+            exit = fadeOut(tween(180))
+        ) {
+            SeekPreviewCard(
+                previewMs = seekPreviewMs,
+                durationMs = totalDurationMs,
+                isForward = seekPreviewMs >= seekStartMs
+            )
+        }
+
+        // ── Auto-next countdown ────────────────────────────────────────────
+        AnimatedVisibility(
+            visible = uiState.showAutoNextOverlay,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .displayCutoutPadding()
+                .navigationBarsPadding()
+                .padding(
+                    start = 16.dp,
+                    end = 16.dp,
+                    bottom = autoNextBottomPadding
+                ),
+            enter = fadeIn(tween(200)) + slideInVertically(
+                animationSpec = tween(Motion.Medium.toInt(), easing = Motion.EmphasizedDecelerate)
+            ) { it / 2 },
+            exit = fadeOut(tween(160)) + slideOutVertically(
+                animationSpec = tween(Motion.Fast.toInt())
+            ) { it / 2 }
+        ) {
+            AutoNextCard(
+                countdown = uiState.autoNextCountdown,
+                nextEpisodeName = nextEpisodeName,
+                onPlayNow = { viewModel.playNextEpisodeNow() },
+                onCancel = { viewModel.cancelAutoNext() }
+            )
+        }
+
+        // ── Locked mode ────────────────────────────────────────────────────
+        if (isLocked) {
+            // Swallow every touch so playback can't be disturbed by accident.
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                if (event.type == PointerEventType.Press) {
+                                    showUnlockButton = true
+                                }
+                                event.changes.forEach { it.consume() }
+                            }
+                        }
+                    }
+            )
+            AnimatedVisibility(
+                visible = showLockHint,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .displayCutoutPadding()
+                    .padding(top = 20.dp),
+                enter = fadeIn(tween(160)) + slideInVertically { -it / 2 },
+                exit = fadeOut(tween(200))
+            ) {
+                PlayerGlass(shape = RoundedCornerShape(50)) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Lock,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "已锁定 · 点击屏幕显示解锁",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Color.White
+                        )
                     }
                 }
             }
+            AnimatedVisibility(
+                visible = showUnlockButton,
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 28.dp),
+                enter = fadeIn(tween(150)) + scaleIn(
+                    initialScale = 0.82f,
+                    animationSpec = spring(dampingRatio = 0.6f, stiffness = 520f)
+                ),
+                exit = fadeOut(tween(150)) + scaleOut(
+                    targetScale = 0.9f,
+                    animationSpec = tween(150)
+                )
+            ) {
+                val unlockInteraction = remember { MutableInteractionSource() }
+                Row(
+                    modifier = Modifier
+                        .pressScale(unlockInteraction)
+                        .clip(RoundedCornerShape(50))
+                        .background(Color.Black.copy(alpha = 0.58f))
+                        .border(1.dp, Color.White.copy(alpha = 0.24f), RoundedCornerShape(50))
+                        .clickable(
+                            interactionSource = unlockInteraction,
+                            indication = null,
+                            onClick = { unlockControls() }
+                        )
+                        .padding(horizontal = 18.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.LockOpen,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = "解锁",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White
+                    )
+                }
+            }
+        }
+
+        // ── Episode sheet / side panel ─────────────────────────────────────
+        if (showEpisodes) {
+            val onEpisode: (Int) -> Unit = { index ->
+                viewModel.selectEpisode(index)
+                showEpisodes = false
+                controlInteraction++
+            }
+            val onSource: (Int) -> Unit = { index ->
+                viewModel.selectSource(index)
+                controlInteraction++
+            }
+            val dismissSheet: () -> Unit = {
+                showEpisodes = false
+                controlInteraction++
+            }
+            if (windowSize == WindowSize.Expanded) {
+                EpisodeSidePanel(
+                    sources = uiState.sources,
+                    currentSourceIndex = uiState.currentSourceIndex,
+                    currentEpisodeIndex = uiState.currentEpisodeIndex,
+                    isLoading = uiState.isLoading,
+                    autoNextEnabled = uiState.autoNextEnabled,
+                    onToggleAutoNext = { viewModel.setAutoNextEnabled(it) },
+                    onSelectEpisode = onEpisode,
+                    onSelectSource = onSource,
+                    onDismiss = dismissSheet
+                )
+            } else {
+                EpisodeSheet(
+                    sources = uiState.sources,
+                    currentSourceIndex = uiState.currentSourceIndex,
+                    currentEpisodeIndex = uiState.currentEpisodeIndex,
+                    isLoading = uiState.isLoading,
+                    autoNextEnabled = uiState.autoNextEnabled,
+                    onToggleAutoNext = { viewModel.setAutoNextEnabled(it) },
+                    onSelectEpisode = onEpisode,
+                    onSelectSource = onSource,
+                    onDismiss = dismissSheet
+                )
+            }
+        }
+    }
+}
+
+// ─── Player chrome surface ──────────────────────────────────────────────────
+
+/**
+ * Dark smoked glass used by every floating player control. Deliberately
+ * theme-independent so white control glyphs stay legible over any video frame,
+ * in both light and dark app themes.
+ */
+@Composable
+private fun PlayerGlass(
+    modifier: Modifier = Modifier,
+    shape: Shape = MaterialTheme.shapes.large,
+    @Suppress("UNUSED_PARAMETER") strong: Boolean = true,
+    content: @Composable BoxScope.() -> Unit,
+) {
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color.Black.copy(alpha = if (strong) 0.64f else 0.50f),
+                        Color.Black.copy(alpha = if (strong) 0.48f else 0.38f)
+                    )
+                )
+            )
+            .border(1.dp, Color.White.copy(alpha = 0.16f), shape),
+        content = content
+    )
+}
+
+// ─── Top bar ────────────────────────────────────────────────────────────────
+
+@Composable
+private fun PlayerTopBar(
+    title: String,
+    subtitle: String?,
+    episodeLabel: String?,
+    showMenu: Boolean,
+    resizeMode: Int,
+    canPip: Boolean,
+    onBackClick: () -> Unit,
+    onSourceClick: () -> Unit,
+    onMenuClick: () -> Unit,
+    onDismissMenu: () -> Unit,
+    onLockClick: () -> Unit,
+    onPipClick: () -> Unit,
+    onResizeModeChange: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(modifier = modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color.Black.copy(alpha = 0.78f), Color.Transparent)
+                    )
+                )
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .displayCutoutPadding()
+                .padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TintedIconButton(
+                icon = Icons.AutoMirrored.Rounded.ArrowBack,
+                contentDescription = "返回",
+                onClick = onBackClick,
+                size = 44.dp
+            )
+            Spacer(Modifier.width(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (!subtitle.isNullOrBlank()) {
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.62f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+            if (episodeLabel != null) {
+                Spacer(Modifier.width(10.dp))
+                TopBarChip(
+                    text = episodeLabel,
+                    icon = null,
+                    onClick = onSourceClick
+                )
+            }
+            if (!subtitle.isNullOrBlank()) {
+                Spacer(Modifier.width(8.dp))
+                TopBarChip(
+                    text = "线路",
+                    icon = Icons.Rounded.Layers,
+                    onClick = onSourceClick
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+            ControlCircleButton(
+                icon = Icons.Rounded.MoreVert,
+                contentDescription = "更多设置",
+                enabled = true,
+                onClick = onMenuClick,
+                size = 40.dp
+            )
+        }
+
+        AnimatedVisibility(
+            visible = showMenu,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .displayCutoutPadding()
+                .padding(top = 64.dp, end = 14.dp),
+            enter = fadeIn(tween(140)) + scaleIn(
+                initialScale = 0.92f,
+                animationSpec = spring(dampingRatio = 0.7f, stiffness = 620f)
+            ),
+            exit = fadeOut(tween(120)) + scaleOut(
+                targetScale = 0.95f,
+                animationSpec = tween(120)
+            )
+        ) {
+            PlayerMoreMenu(
+                resizeMode = resizeMode,
+                canPip = canPip,
+                onResizeMode = onResizeModeChange,
+                onPip = onPipClick,
+                onLock = onLockClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun TopBarChip(
+    text: String,
+    icon: ImageVector?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    Row(
+        modifier = modifier
+            .height(34.dp)
+            .pressScale(interaction, pressedScale = 0.94f)
+            .clip(RoundedCornerShape(50))
+            .background(Color.Black.copy(alpha = 0.44f))
+            .border(1.dp, Color.White.copy(alpha = 0.16f), RoundedCornerShape(50))
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.9f),
+                modifier = Modifier.size(14.dp)
+            )
+        }
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            color = Color.White,
+            maxLines = 1
+        )
+    }
+}
+
+@Composable
+private fun PlayerMoreMenu(
+    resizeMode: Int,
+    canPip: Boolean,
+    onResizeMode: (Int) -> Unit,
+    onPip: () -> Unit,
+    onLock: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    PlayerGlass(
+        modifier = modifier.capturePointerInput(),
+        shape = RoundedCornerShape(20.dp),
+        strong = true
+    ) {
+        Column(modifier = Modifier.width(226.dp).padding(vertical = 8.dp)) {
+            Text(
+                text = "画面比例",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = 0.5f),
+                modifier = Modifier.padding(start = 18.dp, top = 4.dp, bottom = 6.dp)
+            )
+            MenuOptionRow(
+                label = "适应屏幕",
+                selected = resizeMode == AspectRatioFrameLayout.RESIZE_MODE_FIT,
+                icon = Icons.Rounded.AspectRatio
+            ) { onResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FIT) }
+            MenuOptionRow(
+                label = "填充屏幕",
+                selected = resizeMode == AspectRatioFrameLayout.RESIZE_MODE_FILL,
+                icon = Icons.Rounded.AspectRatio
+            ) { onResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FILL) }
+            MenuOptionRow(
+                label = "裁剪铺满",
+                selected = resizeMode == AspectRatioFrameLayout.RESIZE_MODE_ZOOM,
+                icon = Icons.Rounded.AspectRatio
+            ) { onResizeMode(AspectRatioFrameLayout.RESIZE_MODE_ZOOM) }
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 6.dp)
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(Color.White.copy(alpha = 0.10f))
+            )
+            MenuOptionRow(
+                label = "画中画播放",
+                selected = false,
+                icon = Icons.Rounded.PictureInPictureAlt,
+                enabled = canPip,
+                showCheck = false
+            ) { onPip() }
+            MenuOptionRow(
+                label = "锁定屏幕",
+                selected = false,
+                icon = Icons.Rounded.Lock,
+                showCheck = false
+            ) { onLock() }
+        }
+    }
+}
+
+@Composable
+private fun MenuOptionRow(
+    label: String,
+    selected: Boolean,
+    icon: ImageVector,
+    enabled: Boolean = true,
+    showCheck: Boolean = true,
+    onClick: () -> Unit,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val contentColor = if (enabled) Color.White else Color.White.copy(alpha = 0.32f)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(42.dp)
+            .clickable(
+                interactionSource = interaction,
+                indication = null,
+                enabled = enabled,
+                onClick = onClick
+            )
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = contentColor.copy(alpha = if (selected) 1f else 0.78f),
+            modifier = Modifier.size(17.dp)
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = contentColor,
+            maxLines = 1
+        )
+        Spacer(Modifier.weight(1f))
+        if (showCheck && selected) {
+            Icon(
+                imageVector = Icons.Rounded.Check,
+                contentDescription = "已选择",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(17.dp)
+            )
+        }
+    }
+}
+
+// ─── Center transport ───────────────────────────────────────────────────────
+
+@Composable
+private fun PlayerCenterControls(
+    isPlaying: Boolean,
+    hasPrevious: Boolean,
+    hasNext: Boolean,
+    compact: Boolean,
+    onPlayPause: () -> Unit,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+    onSeekBack: () -> Unit,
+    onSeekForward: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(if (compact) 14.dp else 22.dp)
+    ) {
+        ControlCircleButton(
+            icon = Icons.Rounded.SkipPrevious,
+            contentDescription = "上一集",
+            enabled = hasPrevious,
+            onClick = onPrevious,
+            size = if (compact) 46.dp else 52.dp
+        )
+        ControlCircleButton(
+            icon = Icons.Rounded.Replay10,
+            contentDescription = "快退 10 秒",
+            enabled = true,
+            onClick = onSeekBack,
+            size = if (compact) 46.dp else 52.dp
+        )
+        PlayPauseButton(
+            isPlaying = isPlaying,
+            onClick = onPlayPause,
+            size = if (compact) 78.dp else 88.dp
+        )
+        ControlCircleButton(
+            icon = Icons.Rounded.Forward10,
+            contentDescription = "快进 10 秒",
+            enabled = true,
+            onClick = onSeekForward,
+            size = if (compact) 46.dp else 52.dp
+        )
+        ControlCircleButton(
+            icon = Icons.Rounded.SkipNext,
+            contentDescription = "下一集",
+            enabled = hasNext,
+            onClick = onNext,
+            size = if (compact) 46.dp else 52.dp
+        )
+    }
+}
+
+@Composable
+private fun PlayPauseButton(
+    isPlaying: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    size: Dp = 88.dp,
+) {
+    val extras = LocalXiaobaoColors.current
+    val interaction = remember { MutableInteractionSource() }
+    Box(
+        modifier = modifier
+            .size(size)
+            .pressScale(interaction)
+            .clip(CircleShape)
+            .background(Brush.linearGradient(extras.brandGradient))
+            .border(1.dp, Color.White.copy(alpha = 0.24f), CircleShape)
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        AnimatedContent(
+            targetState = isPlaying,
+            transitionSpec = {
+                (fadeIn(tween(170)) + scaleIn(
+                    initialScale = 0.55f,
+                    animationSpec = spring(dampingRatio = 0.6f, stiffness = 480f)
+                )) togetherWith
+                    (fadeOut(tween(110)) + scaleOut(
+                        targetScale = 0.55f,
+                        animationSpec = tween(110)
+                    ))
+            },
+            contentAlignment = Alignment.Center,
+            label = "playPauseIcon"
+        ) { playing ->
+            Icon(
+                imageVector = if (playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                contentDescription = if (playing) "暂停" else "播放",
+                tint = Color.White,
+                modifier = Modifier.size(size * 0.52f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ControlCircleButton(
+    icon: ImageVector,
+    contentDescription: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    size: Dp = 56.dp,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val contentAlpha by animateFloatAsState(
+        targetValue = if (enabled) 1f else 0.32f,
+        animationSpec = tween(Motion.Fast.toInt()),
+        label = "controlAlpha"
+    )
+    Box(
+        modifier = modifier
+            .size(size)
+            .graphicsLayer { alpha = contentAlpha }
+            .pressScale(interaction)
+            .clip(CircleShape)
+            .background(Color.Black.copy(alpha = 0.38f))
+            .border(1.dp, Color.White.copy(alpha = 0.16f), CircleShape)
+            .clickable(
+                interactionSource = interaction,
+                indication = null,
+                enabled = enabled,
+                onClick = onClick
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = Color.White,
+            modifier = Modifier.size(size * 0.42f)
+        )
+    }
+}
+
+// ─── Bottom control panel ───────────────────────────────────────────────────
+
+@Composable
+private fun PlayerBottomPanel(
+    positionMs: Long,
+    durationMs: Long,
+    bufferedPercent: Int,
+    scrubFraction: Float?,
+    seekEnabled: Boolean,
+    speed: Float,
+    gestureHint: String?,
+    showRemaining: Boolean,
+    onToggleRemaining: () -> Unit,
+    onLockClick: () -> Unit,
+    onScrubStart: () -> Unit,
+    onScrub: (Float) -> Unit,
+    onScrubFinished: () -> Unit,
+    onEpisodesClick: () -> Unit,
+    onSpeedClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    PlayerGlass(
+        modifier = modifier.capturePointerInput(),
+        shape = RoundedCornerShape(26.dp),
+        strong = true
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = formatTime(
+                        scrubFraction?.let { (it * durationMs).toLong() } ?: positionMs
+                    ),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White,
+                    modifier = Modifier
+                        .widthIn(min = 46.dp)
+                        .offset(y = 12.dp)
+                )
+                AuroraSeekBar(
+                    positionMs = positionMs,
+                    durationMs = durationMs,
+                    bufferedPercent = bufferedPercent,
+                    scrubFraction = scrubFraction,
+                    enabled = seekEnabled,
+                    onScrubStart = onScrubStart,
+                    onScrub = onScrub,
+                    onScrubFinished = onScrubFinished,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 10.dp)
+                )
+                Text(
+                    text = if (showRemaining && durationMs > 0L) {
+                        "-${formatTime((durationMs - (scrubFraction?.let { (it * durationMs).toLong() } ?: positionMs)).coerceAtLeast(0L))}"
+                    } else {
+                        formatTime(durationMs)
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.7f),
+                    modifier = Modifier
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onToggleRemaining
+                        )
+                        .offset(y = 12.dp)
+                        .padding(vertical = 4.dp)
+                )
+            }
+            Spacer(Modifier.height(6.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                ControlTextButton(
+                    icon = Icons.Rounded.GridView,
+                    text = "选集",
+                    onClick = onEpisodesClick
+                )
+                ControlTextButton(
+                    icon = Icons.Rounded.Speed,
+                    text = "倍速 ${formatSpeed(speed)}",
+                    onClick = onSpeedClick
+                )
+                Spacer(Modifier.weight(1f))
+                if (gestureHint != null) {
+                    Text(
+                        text = gestureHint,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.42f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(horizontal = 6.dp)
+                    )
+                }
+                ControlCircleButton(
+                    icon = Icons.Rounded.Lock,
+                    contentDescription = "锁定屏幕",
+                    enabled = true,
+                    onClick = onLockClick,
+                    size = 40.dp
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ControlTextButton(
+    icon: ImageVector,
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    Row(
+        modifier = modifier
+            .height(44.dp)
+            .pressScale(interaction, pressedScale = 0.94f)
+            .clip(Radii.chip)
+            .background(Color.White.copy(alpha = 0.09f))
+            .border(1.dp, Color.White.copy(alpha = 0.12f), Radii.chip)
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+            .padding(horizontal = 13.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(17.dp)
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            color = Color.White,
+            maxLines = 1
+        )
+    }
+}
+
+/**
+ * Hand-drawn scrub bar: buffered track, gradient played track and a thumb that
+ * swells while dragging. Dragging only previews; the seek is committed on
+ * release, mirroring the previous slider semantics.
+ */
+@Composable
+private fun AuroraSeekBar(
+    positionMs: Long,
+    durationMs: Long,
+    bufferedPercent: Int,
+    scrubFraction: Float?,
+    enabled: Boolean,
+    onScrubStart: () -> Unit,
+    onScrub: (Float) -> Unit,
+    onScrubFinished: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val extras = LocalXiaobaoColors.current
+    val textMeasurer = rememberTextMeasurer()
+    var isDragging by remember { mutableStateOf(false) }
+    var widthPx by remember { mutableFloatStateOf(1f) }
+
+    val baseProgress = if (durationMs > 0L) {
+        (positionMs.toFloat() / durationMs).coerceIn(0f, 1f)
+    } else {
+        0f
+    }
+    val rawProgress = (scrubFraction ?: baseProgress).coerceIn(0f, 1f)
+    val smoothProgress by animateFloatAsState(
+        targetValue = rawProgress,
+        animationSpec = tween(420, easing = LinearEasing),
+        label = "seekSmoothProgress"
+    )
+    val progress = if (isDragging || scrubFraction != null) rawProgress else smoothProgress
+    val thumbScale by animateFloatAsState(
+        targetValue = if (isDragging) 1.45f else 1f,
+        animationSpec = spring(dampingRatio = 0.55f, stiffness = 620f),
+        label = "seekThumbScale"
+    )
+
+    Canvas(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .onSizeChanged { widthPx = it.width.toFloat().coerceAtLeast(1f) }
+            .pointerInput(enabled, durationMs) {
+                if (!enabled) return@pointerInput
+                detectHorizontalDragGestures(
+                    onDragStart = { offset ->
+                        isDragging = true
+                        onScrubStart()
+                        onScrub((offset.x / widthPx).coerceIn(0f, 1f))
+                    },
+                    onHorizontalDrag = { change, _ ->
+                        change.consume()
+                        onScrub((change.position.x / widthPx).coerceIn(0f, 1f))
+                    },
+                    onDragEnd = {
+                        isDragging = false
+                        onScrubFinished()
+                    },
+                    onDragCancel = {
+                        isDragging = false
+                        onScrubFinished()
+                    }
+                )
+            }
+            .pointerInput(enabled, durationMs) {
+                if (!enabled) return@pointerInput
+                detectTapGestures { offset ->
+                    onScrubStart()
+                    onScrub((offset.x / widthPx).coerceIn(0f, 1f))
+                    onScrubFinished()
+                }
+            }
+    ) {
+        val trackHeight = 5.dp.toPx()
+        val radius = trackHeight / 2f
+        val trackCenterY = size.height - 15.dp.toPx()
+        val trackTop = trackCenterY - radius
+
+        drawRoundRect(
+            color = Color.White.copy(alpha = 0.18f),
+            topLeft = Offset(0f, trackTop),
+            size = Size(size.width, trackHeight),
+            cornerRadius = CornerRadius(radius, radius)
+        )
+
+        val bufferFraction = (bufferedPercent / 100f).coerceIn(0f, 1f)
+        if (bufferFraction > 0f) {
+            drawRoundRect(
+                color = Color.White.copy(alpha = 0.30f),
+                topLeft = Offset(0f, trackTop),
+                size = Size(size.width * bufferFraction, trackHeight),
+                cornerRadius = CornerRadius(radius, radius)
+            )
+        }
+
+        val playedWidth = size.width * progress
+        if (playedWidth > 0f) {
+            drawRoundRect(
+                brush = Brush.horizontalGradient(extras.brandGradient),
+                topLeft = Offset(0f, trackTop),
+                size = Size(playedWidth, trackHeight),
+                cornerRadius = CornerRadius(radius, radius)
+            )
+        }
+
+        val thumbX = (size.width * progress).coerceIn(0f, size.width)
+        val thumbRadius = 6.5.dp.toPx() * thumbScale
+        drawCircle(
+            color = Color.White.copy(alpha = 0.16f),
+            radius = thumbRadius * 2.1f,
+            center = Offset(thumbX, trackCenterY)
+        )
+        drawCircle(
+            color = Color.White,
+            radius = thumbRadius,
+            center = Offset(thumbX, trackCenterY)
+        )
+        drawCircle(
+            color = extras.brandGradient.last(),
+            radius = thumbRadius * 0.5f,
+            center = Offset(thumbX, trackCenterY)
+        )
+
+        // Floating time bubble follows the thumb while scrubbing.
+        if ((isDragging || scrubFraction != null) && durationMs > 0L) {
+            val label = formatTime((progress * durationMs).toLong())
+            val textStyle = TextStyle(
+                color = Color.White,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            val layout = textMeasurer.measure(label, textStyle)
+            val padH = 10.dp.toPx()
+            val padV = 5.dp.toPx()
+            val bubbleW = layout.size.width + padH * 2f
+            val bubbleH = layout.size.height + padV * 2f
+            val bubbleX = (thumbX - bubbleW / 2f).coerceIn(0f, (size.width - bubbleW).coerceAtLeast(0f))
+            val bubbleY = 3.dp.toPx()
+            drawRoundRect(
+                color = Color.Black.copy(alpha = 0.82f),
+                topLeft = Offset(bubbleX, bubbleY),
+                size = Size(bubbleW, bubbleH),
+                cornerRadius = CornerRadius(bubbleH / 2f, bubbleH / 2f)
+            )
+            drawRoundRect(
+                color = Color.White.copy(alpha = 0.18f),
+                topLeft = Offset(bubbleX, bubbleY),
+                size = Size(bubbleW, bubbleH),
+                cornerRadius = CornerRadius(bubbleH / 2f, bubbleH / 2f),
+                style = Stroke(width = 1.dp.toPx())
+            )
+            drawText(
+                textLayoutResult = layout,
+                topLeft = Offset(bubbleX + padH, bubbleY + padV)
+            )
+        }
+    }
+}
+
+// ─── Speed picker ───────────────────────────────────────────────────────────
+
+@Composable
+private fun SpeedPicker(
+    currentSpeed: Float,
+    onSelect: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    PlayerGlass(
+        modifier = modifier.capturePointerInput(),
+        shape = Radii.card,
+        strong = true
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SpeedOptions.forEach { speed ->
+                SpeedChip(
+                    text = formatSpeed(speed),
+                    selected = abs(currentSpeed - speed) < 0.001f,
+                    onClick = { onSelect(speed) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SpeedChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val container by animateColorAsState(
+        targetValue = if (selected) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            Color.White.copy(alpha = 0.08f)
+        },
+        animationSpec = tween(Motion.Fast.toInt()),
+        label = "speedChipContainer"
+    )
+    val content by animateColorAsState(
+        targetValue = if (selected) {
+            MaterialTheme.colorScheme.onPrimary
+        } else {
+            Color.White
+        },
+        animationSpec = tween(Motion.Fast.toInt()),
+        label = "speedChipContent"
+    )
+    Box(
+        modifier = Modifier
+            .height(44.dp)
+            .pressScale(interaction, pressedScale = 0.94f)
+            .clip(Radii.chip)
+            .background(container)
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+            .padding(horizontal = 14.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            color = content,
+            maxLines = 1
+        )
+    }
+}
+
+// ─── Gesture feedback ───────────────────────────────────────────────────────
+
+@Composable
+private fun AdjustIndicator(
+    label: String,
+    level: Float,
+    modifier: Modifier = Modifier,
+) {
+    val extras = LocalXiaobaoColors.current
+    val safeLevel = level.coerceIn(0f, 1f)
+    val isVolume = label.startsWith("音量")
+    val icon = when {
+        !isVolume -> Icons.Rounded.Brightness6
+        safeLevel <= 0.001f -> Icons.AutoMirrored.Rounded.VolumeOff
+        else -> Icons.AutoMirrored.Rounded.VolumeUp
+    }
+
+    PlayerGlass(
+        modifier = modifier.width(136.dp),
+        shape = Radii.card,
+        strong = true
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(Modifier.height(14.dp))
+            Box(
+                modifier = Modifier
+                    .width(8.dp)
+                    .height(108.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(Color.White.copy(alpha = 0.16f))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .fillMaxHeight(safeLevel)
+                        .clip(RoundedCornerShape(50))
+                        .background(Brush.verticalGradient(extras.brandGradient))
+                )
+            }
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = "${(safeLevel * 100).roundToInt()}%",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = 0.6f),
+                maxLines = 1
+            )
+        }
+    }
+}
+
+@Composable
+private fun SeekPreviewCard(
+    previewMs: Long,
+    durationMs: Long,
+    isForward: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val extras = LocalXiaobaoColors.current
+    val fraction = if (durationMs > 0L) {
+        (previewMs.toFloat() / durationMs).coerceIn(0f, 1f)
+    } else {
+        0f
+    }
+    PlayerGlass(
+        modifier = modifier.widthIn(min = 200.dp),
+        shape = Radii.card,
+        strong = true
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 22.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Icon(
+                    imageVector = if (isForward) {
+                        Icons.Rounded.FastForward
+                    } else {
+                        Icons.Rounded.FastRewind
+                    },
+                    contentDescription = if (isForward) "快进" else "快退",
+                    tint = Color.White,
+                    modifier = Modifier.size(26.dp)
+                )
+                Text(
+                    text = formatTime(previewMs),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                Text(
+                    text = "/ ${formatTime(durationMs)}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.55f)
+                )
+            }
+            Spacer(Modifier.height(10.dp))
+            Box(
+                modifier = Modifier
+                    .width(196.dp)
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(Color.White.copy(alpha = 0.2f))
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth(fraction)
+                        .background(Brush.horizontalGradient(extras.brandGradient))
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SkipIndicator(
+    text: String,
+    isForward: Boolean,
+    revision: Int,
+    modifier: Modifier = Modifier,
+) {
+    val rippleScale = remember { Animatable(0.55f) }
+    val rippleAlpha = remember { Animatable(0.55f) }
+    LaunchedEffect(revision) {
+        rippleScale.snapTo(0.55f)
+        rippleAlpha.snapTo(0.55f)
+        rippleScale.animateTo(
+            targetValue = 1.25f,
+            animationSpec = tween(430, easing = Motion.EmphasizedDecelerate)
+        )
+        rippleAlpha.animateTo(targetValue = 0f, animationSpec = tween(430))
+    }
+
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(modifier = Modifier.size(104.dp), contentAlignment = Alignment.Center) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.22f * rippleAlpha.value),
+                            Color.Transparent
+                        )
+                    ),
+                    radius = size.minDimension / 2f * rippleScale.value
+                )
+            }
+            Icon(
+                imageVector = if (isForward) {
+                    Icons.Rounded.FastForward
+                } else {
+                    Icons.Rounded.FastRewind
+                },
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(38.dp)
+            )
+        }
+        Spacer(Modifier.height(2.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = Color.White
+        )
+    }
+}
+
+// ─── Status surfaces ────────────────────────────────────────────────────────
+
+@Composable
+private fun BufferingIndicator(modifier: Modifier = Modifier) {
+    PlayerGlass(
+        modifier = modifier,
+        shape = RoundedCornerShape(50),
+        strong = false
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            XiaobaoSpinner(size = 22.dp, strokeWidth = 2.5.dp)
+            Text(
+                text = "缓冲中…",
+                style = MaterialTheme.typography.labelMedium,
+                color = Color.White.copy(alpha = 0.9f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SpeedBoostChip(modifier: Modifier = Modifier) {
+    PlayerGlass(modifier = modifier, shape = RoundedCornerShape(50), strong = true) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.Bolt,
+                contentDescription = null,
+                tint = Color(0xFFFFC24B),
+                modifier = Modifier.size(16.dp)
+            )
+            Text(
+                text = "2× 倍速中 · 松开恢复",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White
+            )
+        }
+    }
+}
+
+@Composable
+private fun PlayerErrorCard(
+    message: String,
+    onRetry: () -> Unit,
+    onSwitchSource: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+) {
+    PlayerGlass(
+        modifier = modifier.widthIn(max = 420.dp),
+        shape = Radii.card,
+        strong = true
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 22.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = Icons.Rounded.ErrorOutline,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.9f),
+                modifier = Modifier.size(32.dp)
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = "播放失败",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.White.copy(alpha = 0.66f),
+                textAlign = TextAlign.Center,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(Modifier.height(18.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                GradientPillButton(
+                    text = "重试",
+                    onClick = onRetry,
+                    icon = Icons.Rounded.Refresh,
+                    height = 46.dp
+                )
+                if (onSwitchSource != null) {
+                    GlassPillButton(
+                        text = "切换线路",
+                        onClick = onSwitchSource,
+                        icon = Icons.Rounded.Layers,
+                        height = 46.dp,
+                        contentColor = Color.White,
+                        container = Color.White.copy(alpha = 0.12f),
+                        borderColor = Color.White.copy(alpha = 0.20f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AutoNextCard(
+    countdown: Int,
+    nextEpisodeName: String?,
+    onPlayNow: () -> Unit,
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    PlayerGlass(
+        modifier = modifier.widthIn(max = 480.dp),
+        shape = Radii.card,
+        strong = true
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                ProgressRing(
+                    progress = (countdown.toFloat() / AutoNextTotal).coerceIn(0f, 1f),
+                    size = 48.dp,
+                    strokeWidth = 4.dp,
+                    gradient = true
+                )
+                Text(
+                    text = countdown.coerceAtLeast(0).toString(),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "即将播放下一集",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 1
+                )
+                if (!nextEpisodeName.isNullOrBlank()) {
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = nextEpisodeName,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White.copy(alpha = 0.62f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalAlignment = Alignment.End
+            ) {
+                GradientPillButton(
+                    text = "立即播放",
+                    onClick = onPlayNow,
+                    icon = Icons.Rounded.PlayArrow,
+                    height = 40.dp
+                )
+                GlassPillButton(
+                    text = "取消",
+                    onClick = onCancel,
+                    height = 34.dp,
+                    contentColor = Color.White,
+                    container = Color.White.copy(alpha = 0.14f),
+                    borderColor = Color.White.copy(alpha = 0.20f)
+                )
+            }
+        }
+    }
+}
+
+// ─── Episode sheet / side panel ─────────────────────────────────────────────
+
+@Composable
+private fun EpisodeSheetBody(
+    sources: List<VideoSource>,
+    currentSourceIndex: Int,
+    currentEpisodeIndex: Int,
+    isLoading: Boolean,
+    autoNextEnabled: Boolean,
+    onToggleAutoNext: (Boolean) -> Unit,
+    onSelectEpisode: (Int) -> Unit,
+    onSelectSource: (Int) -> Unit,
+    columns: Int,
+    onDark: Boolean,
+    gridModifier: Modifier,
+    modifier: Modifier = Modifier,
+) {
+    val episodes = sources.getOrNull(currentSourceIndex)?.episodes.orEmpty()
+    val titleColor = if (onDark) Color.White else MaterialTheme.colorScheme.onSurface
+    val subtitleColor = if (onDark) {
+        Color.White.copy(alpha = 0.58f)
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val accentColor = if (onDark) Color(0xFF9DB4FF) else MaterialTheme.colorScheme.primary
+
+    Column(modifier = modifier) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "选集",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = titleColor
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "共 ${episodes.size} 集",
+                style = MaterialTheme.typography.bodySmall,
+                color = subtitleColor
+            )
+            Spacer(Modifier.weight(1f))
+            Text(
+                text = "${(currentEpisodeIndex + 1).coerceAtMost(episodes.size.coerceAtLeast(1))} / ${episodes.size}",
+                style = MaterialTheme.typography.labelMedium,
+                color = accentColor
+            )
+        }
+
+        Spacer(Modifier.height(10.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "自动连播",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = titleColor
+                )
+                Text(
+                    text = "播完自动进入下一集",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = subtitleColor
+                )
+            }
+            Switch(
+                checked = autoNextEnabled,
+                onCheckedChange = onToggleAutoNext,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = MaterialTheme.colorScheme.primary
+                )
+            )
+        }
+
+        if (sources.size > 1) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = "播放线路",
+                style = MaterialTheme.typography.labelMedium,
+                color = subtitleColor
+            )
+            Spacer(Modifier.height(4.dp))
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                itemsIndexed(items = sources) { index, source ->
+                    SelectChip(
+                        text = source.name.ifBlank { "线路 ${index + 1}" },
+                        selected = index == currentSourceIndex,
+                        onClick = { onSelectSource(index) },
+                        modifier = Modifier.heightIn(min = 44.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(10.dp))
+
+        if (episodes.isEmpty()) {
+            Text(
+                text = "暂无可用剧集",
+                style = MaterialTheme.typography.bodyMedium,
+                color = subtitleColor
+            )
+        } else {
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(columns),
+                modifier = gridModifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(bottom = 12.dp)
+            ) {
+                itemsIndexed(items = episodes) { index, episode ->
+                    EpisodeChip(
+                        text = episode.name,
+                        selected = index == currentEpisodeIndex,
+                        onClick = { if (!isLoading) onSelectEpisode(index) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EpisodeSheet(
+    sources: List<VideoSource>,
+    currentSourceIndex: Int,
+    currentEpisodeIndex: Int,
+    isLoading: Boolean,
+    autoNextEnabled: Boolean,
+    onToggleAutoNext: (Boolean) -> Unit,
+    onSelectEpisode: (Int) -> Unit,
+    onSelectSource: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val windowSize = rememberWindowSize()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val columns = when (windowSize) {
+        WindowSize.Compact -> 4
+        WindowSize.Medium -> 6
+        WindowSize.Expanded -> 8
+    }
+    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+    val sheetMaxHeight = (screenHeight * 0.86f).coerceIn(320.dp, 720.dp)
+    val gridMaxHeight = (sheetMaxHeight - 214.dp).coerceAtLeast(110.dp)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = Radii.sheet,
+        tonalElevation = 0.dp,
+        dragHandle = {
+            Box(
+                modifier = Modifier
+                    .padding(top = 12.dp, bottom = 6.dp)
+                    .width(40.dp)
+                    .height(4.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+            )
+        }
+    ) {
+        EpisodeSheetBody(
+            sources = sources,
+            currentSourceIndex = currentSourceIndex,
+            currentEpisodeIndex = currentEpisodeIndex,
+            isLoading = isLoading,
+            autoNextEnabled = autoNextEnabled,
+            onToggleAutoNext = onToggleAutoNext,
+            onSelectEpisode = onSelectEpisode,
+            onSelectSource = onSelectSource,
+            columns = columns,
+            onDark = false,
+            gridModifier = Modifier.heightIn(max = gridMaxHeight),
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = sheetMaxHeight)
+                .navigationBarsPadding()
+                .padding(horizontal = 20.dp)
+        )
+    }
+}
+
+@Composable
+private fun EpisodeSidePanel(
+    sources: List<VideoSource>,
+    currentSourceIndex: Int,
+    currentEpisodeIndex: Int,
+    isLoading: Boolean,
+    autoNextEnabled: Boolean,
+    onToggleAutoNext: (Boolean) -> Unit,
+    onSelectEpisode: (Int) -> Unit,
+    onSelectSource: (Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.34f))
+                .pointerInput(Unit) {
+                    detectTapGestures { onDismiss() }
+                }
+        )
+        val visibleState = remember {
+            androidx.compose.animation.core.MutableTransitionState(false).apply {
+                targetState = true
+            }
+        }
+        AnimatedVisibility(
+            visibleState = visibleState,
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .fillMaxHeight(),
+            enter = slideInHorizontally(
+                initialOffsetX = { it },
+                animationSpec = tween(Motion.Medium.toInt(), easing = Motion.EmphasizedDecelerate)
+            ) + fadeIn(tween(160)),
+            exit = slideOutHorizontally(
+                targetOffsetX = { it },
+                animationSpec = tween(Motion.Fast.toInt(), easing = Motion.EmphasizedAccelerate)
+            ) + fadeOut(tween(140))
+        ) {
+            PlayerGlass(
+                shape = RoundedCornerShape(topStart = 30.dp, bottomStart = 30.dp),
+                strong = true
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(430.dp)
+                        .displayCutoutPadding()
+                        .navigationBarsPadding()
+                        .padding(horizontal = 22.dp, vertical = 18.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Spacer(Modifier.weight(1f))
+                        ControlCircleButton(
+                            icon = Icons.Rounded.Close,
+                            contentDescription = "关闭选集",
+                            enabled = true,
+                            onClick = onDismiss,
+                            size = 36.dp
+                        )
+                    }
+                    EpisodeSheetBody(
+                        sources = sources,
+                        currentSourceIndex = currentSourceIndex,
+                        currentEpisodeIndex = currentEpisodeIndex,
+                        isLoading = isLoading,
+                        autoNextEnabled = autoNextEnabled,
+                        onToggleAutoNext = onToggleAutoNext,
+                        onSelectEpisode = onSelectEpisode,
+                        onSelectSource = onSelectSource,
+                        columns = 3,
+                        onDark = true,
+                        gridModifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ─── Small helpers ──────────────────────────────────────────────────────────
+
+/**
+ * Marks a floating panel as the top-most pointer target so drags on the panel
+ * never leak into the video gesture layer underneath (which would seek or
+ * change volume). Child clickables still receive their events first.
+ */
+private fun Modifier.capturePointerInput(): Modifier = this.pointerInput(Unit) {
+    awaitPointerEventScope {
+        while (true) {
+            awaitPointerEvent()
         }
     }
 }
@@ -797,3 +2702,5 @@ private fun formatTime(ms: Long): String {
         String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds)
     }
 }
+
+private fun formatSpeed(speed: Float): String = "${speed}x"

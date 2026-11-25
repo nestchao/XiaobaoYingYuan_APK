@@ -56,4 +56,14 @@ class HistoryViewModel @Inject constructor(
             watchHistoryRepository.clearAll()
         }
     }
+
+    /**
+     * Re-inserts a previously deleted entry. Used by the "撤销" snackbar action so
+     * an accidental swipe does not lose the playback position.
+     */
+    fun restoreItem(item: WatchHistoryItem) {
+        viewModelScope.launch {
+            watchHistoryRepository.saveWatchHistory(item)
+        }
+    }
 }
