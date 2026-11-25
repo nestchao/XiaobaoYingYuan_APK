@@ -7,12 +7,12 @@
 **An ad-free Android video streaming app with a cinematic Aurora UI.**<br/>
 Built with Kotlin, Jetpack Compose and Media3 ExoPlayer, with layouts for both phones and tablets.
 
-[![Latest release](https://img.shields.io/github/v/release/nestchao/XiaobaoYingYuan_APK?style=flat-square&color=7c4dff&label=release)](https://github.com/nestchao/XiaobaoYingYuan_APK/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/nestchao/XiaobaoYingYuan_APK/total?style=flat-square&color=5b7cfa)](https://github.com/nestchao/XiaobaoYingYuan_APK/releases)
+[![Latest release](https://img.shields.io/github/v/release/nestchao/XiaobaoYingYuan_APK?style=flat-square&color=111111&label=release)](https://github.com/nestchao/XiaobaoYingYuan_APK/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/nestchao/XiaobaoYingYuan_APK/total?style=flat-square&color=555555)](https://github.com/nestchao/XiaobaoYingYuan_APK/releases)
 [![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-3DDC84?style=flat-square&logo=android&logoColor=white)](#-install)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.1-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white)](https://developer.android.com/jetpack/compose)
-[![Website](https://img.shields.io/badge/website-live-8ca5ff?style=flat-square)](https://nestchao.github.io/XiaobaoYingYuan_APK/)
+[![Website](https://img.shields.io/badge/website-live-111111?style=flat-square)](https://nestchao.github.io/XiaobaoYingYuan_APK/)
 
 [**⬇️ Download APK**](https://github.com/nestchao/XiaobaoYingYuan_APK/releases/latest) · [**🌐 Website**](https://nestchao.github.io/XiaobaoYingYuan_APK/) · [**📝 Changelog**](#-changelog) · [**🛠 Build from source**](#-build-from-source)
 
