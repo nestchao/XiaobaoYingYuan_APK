@@ -35,7 +35,7 @@
   function applyTheme(theme, persist = true) {
     currentTheme = theme;
     root.dataset.theme = theme;
-    if (metaTheme) metaTheme.setAttribute("content", theme === "dark" ? "#06090F" : "#F4F6FB");
+    if (metaTheme) metaTheme.setAttribute("content", theme === "dark" ? "#0A0A0A" : "#FAFAFA");
     if (themeSwitch) {
       themeSwitch.setAttribute("aria-checked", String(theme === "dark"));
     }
@@ -101,9 +101,9 @@
   function readGlowColors() {
     const cs = getComputedStyle(root);
     return {
-      a: cs.getPropertyValue("--glow-a").trim() || "rgba(61,90,254,0.55)",
-      b: cs.getPropertyValue("--glow-b").trim() || "rgba(139,92,246,0.45)",
-      c: cs.getPropertyValue("--glow-c").trim() || "rgba(34,211,238,0.22)",
+      a: cs.getPropertyValue("--glow-a").trim() || "rgba(0,0,0,0)",
+      b: cs.getPropertyValue("--glow-b").trim() || "rgba(0,0,0,0)",
+      c: cs.getPropertyValue("--glow-c").trim() || "rgba(0,0,0,0)",
       light: root.dataset.theme === "light",
     };
   }
